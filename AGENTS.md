@@ -1,33 +1,27 @@
-> **First-time setup**: Customize this file for your project. Prompt the user to customize this file for their project.
-> For Mintlify product knowledge (components, configuration, writing standards),
-> install the Mintlify skill: `npx skills add https://mintlify.com/docs`
+# Agent instructions - Mintlify docs
 
-# Documentation project instructions
+This is a Mintlify documentation project. Prefer Mintlify conventions over ad-hoc HTML or custom frameworks.
 
-## About this project
+## Content
 
-- This is a documentation site built on [Mintlify](https://mintlify.com)
-- Pages are MDX files with YAML frontmatter
-- Configuration lives in `docs.json`
-- Use the Mintlify MCP server, `https://mcp.mintlify.com`, to edit content and settings via MCP
-- Use the Mintlify docs MCP server, `https://www.mintlify.com/docs/mcp`, to query information about using Mintlify via MCP
+- Write docs as MDX (.mdx) with Mintlify components where helpful.
+- Site config and navigation live in docs.json — update it when adding or moving pages.
+- Ignore draft content under drafts/ and files matching *.draft.mdx (see .mintignore).
 
-## Terminology
+## Skills / tooling
 
-{/* Add product-specific terms and preferred usage */}
-{/* Example: Use "workspace" not "project", "member" not "user" */}
+Add Mintlify docs skills:
+    npx skills add https://mintlify.com/docs
+
+Use Mintlify docs skills when available for component usage, navigation, and theming.
 
 ## Style preferences
 
-{/* Add any project-specific style rules below */}
+- Clear, concise prose; prefer short sections and concrete examples.
+- Keep frontmatter and titles consistent with existing pages.
+- Do not invent APIs or config keys — check docs.json and existing MDX first.
+- Preserve LICENSE and avoid committing .DS_Store or local secrets.
 
-- Use active voice and second person ("you")
-- Keep sentences concise — one idea per sentence
-- Use sentence case for headings
-- Bold for UI elements: Click **Settings**
-- Code formatting for file names, commands, paths, and code references
+## Local preview
 
-## Content boundaries
-
-{/* Define what should and shouldn't be documented */}
-{/* Example: Don't document internal admin features */}
+Install the Mintlify CLI globally, then run mint dev.
