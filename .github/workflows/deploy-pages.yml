@@ -1,0 +1,58 @@
+name: Deploy Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout oh-my-docs
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Mintlify CLI
+        run: npm i -g mint
+
+      - name: Export static site
+        run: mint export --output export.zip
+
+      - name: Prepare site directory
+        run: |
+          set -euo pipefail
+          rm -rf site
+          mkdir site
+          unzip -q export.zip -d site
+          rm -f site/serve.js "site/Start Docs.bat" "site/Start Docs.command"
+          touch site/.nojekyll
+          cp scripts/pagefind-nav.js site/pagefind-nav.js
+          cp scripts/pagefind-nav.css site/pagefind-nav.css
+          python3 scripts/inject-pagefind.py site
+
+      - name: Build search index
+        run: npx -y pagefind --site site
+
+      - name: Publish static site
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          deploy_key: ${{ secrets.PAGES_DEPLOY_KEY }}
+          external_repository: kongds1999/kongds1999.github.io
+          publish_branch: main
+          publish_dir: ./site
+          enable_jekyll: false
+          force_orphan: false
+          commit_message: "Deploy docs from oh-my-docs ${{ github.sha }}"
