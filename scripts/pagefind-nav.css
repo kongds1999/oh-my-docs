@@ -10,6 +10,7 @@
   justify-content: center;
   padding: 10vh 1rem 2rem;
   box-sizing: border-box;
+  --pagefind-ui-scale: 0.75;
 }
 #pagefind-overlay.open {
   display: flex;
@@ -21,7 +22,7 @@
   background: #ffffff;
   color: #0f172a;
   border-radius: 14px;
-  padding: 1rem 1rem 1.25rem;
+  padding: 0.65rem 0.65rem 1rem;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
 }
 html.dark #pagefind-overlay .pagefind-overlay-panel,
@@ -29,30 +30,23 @@ html.dark #pagefind-overlay .pagefind-overlay-panel,
   background: #0b1220;
   color: #e2e8f0;
 }
+
+/* Tighten Pagefind default search input (default left pad ~54px*scale for magnifier) */
+#pagefind-overlay .pagefind-ui__search-input {
+  padding-left: calc(2.5rem * var(--pagefind-ui-scale, 0.75)) !important;
+}
+#pagefind-overlay .pagefind-ui__form:before {
+  left: calc(0.75rem * var(--pagefind-ui-scale, 0.75)) !important;
+}
+
+/* Hide legacy FAB if any cached HTML still injects it */
 #pagefind-fab {
-  position: fixed;
-  right: 1.25rem;
-  bottom: 1.25rem;
-  z-index: 2147482000;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.65rem 1rem;
-  border: 0;
-  border-radius: 999px;
-  background: #0f172a;
-  color: #f8fafc;
-  font: 600 14px/1.2 system-ui, -apple-system, Segoe UI, sans-serif;
-  cursor: pointer;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.35);
+  display: none !important;
 }
-#pagefind-fab:hover {
-  filter: brightness(1.08);
+
+/* Hide Mintlify client compile-status widget on static GH Pages (sticks forever) */
+div[role="status"].fixed.cursor-grab {
+  display: none !important;
 }
-@media (prefers-color-scheme: dark) {
-  #pagefind-fab {
-    background: #e2e8f0;
-    color: #0f172a;
-  }
-}
+
 /* Soften Mintlify native search hint when cloud search is unavailable */

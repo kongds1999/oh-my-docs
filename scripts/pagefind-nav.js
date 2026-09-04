@@ -6,7 +6,6 @@
 (function () {
   var OVERLAY_ID = "pagefind-overlay";
   var ROOT_ID = "pagefind-search";
-  var FAB_ID = "pagefind-fab";
 
   function isEditable(el) {
     if (!el || el === document.body) return false;
@@ -31,21 +30,6 @@
       overlay.addEventListener("click", function (e) {
         if (e.target === overlay) close();
       });
-    }
-    var fab = document.getElementById(FAB_ID);
-    if (!fab) {
-      fab = document.createElement("button");
-      fab.id = FAB_ID;
-      fab.type = "button";
-      fab.setAttribute("aria-label", "Search documentation");
-      fab.title = "Search (/ or Ctrl/Cmd+K)";
-      fab.innerHTML =
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Search</span>';
-      fab.addEventListener("click", function (e) {
-        e.preventDefault();
-        open();
-      });
-      document.body.appendChild(fab);
     }
     return overlay;
   }

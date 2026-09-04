@@ -34,4 +34,4 @@ Pushes to `main` run [.github/workflows/deploy-pages.yml](.github/workflows/depl
 
 Deploy uses an SSH write deploy key stored as the `PAGES_DEPLOY_KEY` Actions secret (no personal access token). You can also run the workflow manually via **Actions → Deploy Pages → Run workflow**.
 
-On the live site, use the **Search** control (bottom-right), press `/` or `Ctrl/Cmd+K`, or click the header search bar to open Pagefind. The Mintlify “login to CLI to enable search” message may still appear in the native UI; Pagefind is the working search for this GitHub Pages setup.
+On the live site, press `/` or `Ctrl/Cmd+K`, or click the header search bar to open Pagefind. The Mintlify “login to CLI to enable search” message may still appear in the native UI; Pagefind is the working search for this GitHub Pages setup.
