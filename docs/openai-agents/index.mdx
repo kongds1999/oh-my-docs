@@ -1,0 +1,70 @@
+---
+title: "入门指南"
+sidebarTitle: "快速开始"
+description: "介绍如何使用 OpenAI Agents SDK 一步步构建智能体应用，本教程基于 [openai-agents-python](https://github.com/openai/openai-agents-python)"
+---
+## 概述
+
+OpenAI Agents SDK 是一个轻量、易用、包含极少抽象概念的软件包，用来快速构建 Agent 应用。
+
+示例代码主要基于 [claude-code-from-scratch](https://github.com/FareedKhan-dev/claude-code-from-scratch) 项目，使用 openai-agents-python sdk 重写。你很快会体会到使用openai-agents sdk 构建 Agent 有多方便。
+
+<Tip>
+
+[claude-code-from-scratch](https://github.com/FareedKhan-dev/claude-code-from-scratch) 是一个对Claude Code架构的完整逆向工程项目——从最小Agent Loop开始，使用23个核心文件逐步构建完整的生产系统。
+
+</Tip>
+
+- OpenAI SDK
+
+## 核心能力
+
+<CardGroup cols={2}>
+
+  <Card title="了解差异" icon="book" href="#">
+
+```
+OpenAI SDK 和 OpenAI Agents SDK
+```
+
+  </Card>
+
+  <Card title="工具调用" icon="wrench" href="#">
+
+```
+为 Agent 赋予外部工具与函数调用能力
+```
+
+  </Card>
+
+</CardGroup>
+
+## 快速示例
+
+以下是构建一个基础 Agent 的 Python 示例代码：
+
+```python
+from agents import Agent, Runner
+
+agent = Agent(name="Assistant", instructions="You are a helpful assistant")
+
+result = Runner.run_sync(agent, "Write a haiku about recursion in programming.")
+print(result.final_output)
+
+# Code within the code,
+# Functions calling themselves,
+# Infinite loop's dance.
+```
+
+（运行此代码时，请确保已设置`OPENAI_API_KEY`环境变量）
+
+```bash
+export OPENAI_API_KEY=sk-xxxx
+export OPENAI_BASE_URL=https://xxxx.com # 使用官方API时忽略
+```
+
+## 下一步
+
+- 定义 Tools 并注册到 Agent
+- 结合持久化会话（Sessions）与记忆管理
+

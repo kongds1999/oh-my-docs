@@ -42,6 +42,7 @@ jobs:
           cp scripts/pagefind-nav.js site/pagefind-nav.js
           cp scripts/pagefind-nav.css site/pagefind-nav.css
           python3 scripts/inject-pagefind.py site
+          python3 scripts/export-markdown.py site
 
       - name: Build search index
         run: npx -y pagefind --site site

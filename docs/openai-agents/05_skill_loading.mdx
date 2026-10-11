@@ -1,0 +1,83 @@
+---
+title: "按需加载 Skill（Meta-Tooling）"
+sidebarTitle: "Skill 按需加载"
+description: "用 list_skills 和 load_skill 两个工具实现惰性加载，让 Agent 按需获取领域知识，而不是把所有文档塞进系统提示。"
+---
+
+## 问题背景
+
+Agent 要处理的领域越多，系统提示就越容易膨胀：把每个框架的用法、每条 SOP 全写进去，token 很快就撑满了，模型也容易被无关信息干扰。
+
+一个更省的做法是 **Meta-Tooling**：Agent 只持有一份轻量索引（名称 + 一行描述），需要哪个领域的知识再去加载，不用的时候完全不占上下文。
+
+## 两个工具就够了
+
+整个机制只依赖两个工具，都定义在 [tools.py](https://github.com/kongds1999/agent_from_scratch/blob/main/tools.py)：
+
+| 工具 | 作用 |
+|------|------|
+| `list_skills` | 列出 `skills/` 目录下所有可用 skill，返回名称 + 描述 |
+| `load_skill` | 读取指定 skill 的 `SKILL.md`，把完整文档注入到对话中 |
+
+Skill 的目录结构很简单：
+
+```
+skills/
+  git/
+    SKILL.md
+  docker/
+    SKILL.md
+  ...
+```
+
+## 搭起来
+
+启动时发现可用的 skill，把轻量索引写进系统提示：
+
+```python
+from agents import Agent, Runner
+from tools import AGENT_TOOLS, discover_skills, SKILL_TOOLS
+
+_initial_skills = discover_skills()
+_skill_index_str = "\n".join(
+    f"  - {n}: {d}" for n, d in _initial_skills.items()
+) or "  (none currently installed)"
+
+SYSTEM = (
+    f"You are a coding agent at {os.getcwd()}.\n"
+    "When a task requires specific knowledge, call load_skill(name) to get full instructions. "
+    "Do NOT guess or hallucinate details if a skill is available. "
+    "Use list_skills to refresh the index.\n\n"
+    f"Available Skills Index:\n{_skill_index_str}"
+)
+
+agent = Agent(
+    name="SkillAssistant",
+    model=MODEL,
+    instructions=SYSTEM,
+    tools=[*AGENT_TOOLS, *SKILL_TOOLS],  # 基础工具 + list_skills / load_skill
+)
+```
+
+用 `@function_tool` 把 Python 函数直接变成工具，参数 schema 从类型注解自动生成，不需要手写 JSON schema：
+
+```python
+from agents import function_tool
+
+@function_tool
+def load_skill(name: str) -> str:
+    """Load the full documentation for a named skill."""
+    path = SKILLS_DIR / name / "SKILL.md"
+    if not path.exists():
+        return f"Skill '{name}' not found."
+    return path.read_text()
+```
+
+## System prompt 示例
+```python
+You are a coding agent at /Users/<user>/project.
+You have access to specialized 'Skills' (domain knowledge files). When a task requires specific knowledge (e.g., a specific framework, API, or language), call load_skill(name) to get full instructions. Do NOT guess or hallucinate details if a skill is available. Use list_skills whenever youneed to refresh the index.
+
+Available Skills Index:
+  - tdd: Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions 
+```

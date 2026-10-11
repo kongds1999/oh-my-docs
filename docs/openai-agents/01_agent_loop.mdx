@@ -1,0 +1,215 @@
+---
+title: "从构建第一个agent loop开始"
+sidebarTitle: "Agent with tools"
+description: 
+---
+事实上，在[快速开始](./index)中的示例代码，已经可以看到一个非常简单的Agent实例已经构建出来，但那充其量仍是一个单向问答的对话`Bot`。
+一个真正能解决实际问题的智能体，核心在于能够感知环境并对系统产生副作用。这一小节简述如何使用 OpenAI Agents SDK 给 Agent 赋予可供调用的 `tools`，并通过自动循环让模型自主决定何时调用外部工具。
+
+<Note>
+
+有了工具 Agent 才能够走出纯文本预测，真正执行操作——例如读取文件、运行代码、检索环境，甚至操作计算机终端。
+
+</Note>
+
+定义一个基本工具的简单形式如下：
+
+```python
+from agents.decorators import function_tool
+from agents import Agent
+
+@functional_tool
+def run_tool(params: Annotated[str, "Description of tool parameters"]) -> str:
+    """The description seen before calling the tool"""
+    pass
+
+agent = Agent(
+    name="Assistant",
+    model="gpt-5.5",
+    instructions=f"You are a coding agent at {os.getcwd()}. Use the bash tool to solve tasks. Act, don't explain unless needed.",
+    tools=[run_tool],
+)
+```
+
+值得注意，Agent 看到这个工具的形式如下：
+
+```json
+{
+  "type": "function",
+  "function": {
+    "name": "run_tool",
+    "description": "The description seen before calling the tool",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "type": "string",
+          "description": "Description of tool parameters"
+        }
+      },
+      "required": [
+        "params"
+      ]
+    }
+  }
+}
+
+```
+
+`Agent`根据`name`确定调用哪个工具，根据`description`决定何时调用工具，而`param.descriptopn`则标识如果要调用这个工具应该传入一个`string`类型的参数。
+
+---
+
+以下是构建一个基础 Agent 的 Python 示例代码：
+
+```python
+import os, sys
+from dotenv import load_dotenv
+from agents import Agent, Runner, set_tracing_disabled, set_default_openai_api
+from tools import AGENT_TOOLS
+
+load_dotenv() 
+set_tracing_disabled(True)  # Disable tracing for cleaner output
+set_default_openai_api("chat_completions")  # 兼容 LiteLLM / 第三方中转
+
+
+# 3. 终端交互 REPL                                                                                                     
+def main():
+    
+    agent = Agent(
+        name="CodingAssistant",
+        model="openai/gpt-5.5",
+        instructions=f"You are a coding agent at {os.getcwd()}. Use the bash tool to solve tasks. Act, don't explain unless needed.",
+        tools=AGENT_TOOLS,
+    )
+    print("\033[90m openai-agents-code v0.1.0 \033[0m")                                                                
+                                                                                                                        
+    # 存储多轮会话历史                                                                                                 
+    conversation_history = []                                                                                          
+                                                                                                                        
+    while True:                                                                                                        
+        try:                                                                                                           
+            query = input("\033[32m> \033[0m").strip()                                                                 
+        except (EOFError, KeyboardInterrupt):                                                                          
+            print("\n\033[31mExiting...\033[0m")                                                                       
+            sys.exit(0)                                                                                                
+                                                                                                                        
+        if not query or query.lower() in {"q", "exit", "quit"}:                                                        
+            print("\033[31mExiting the REPL.\033[0m")                                                                  
+            break                                                                                                      
+                                                                                                                        
+        # 将用户新输入并入上下文                                                                                       
+        current_input = conversation_history + [{"role": "user", "content": query}]                                    
+                                                                                                                        
+        # Runner 内部会自动处理多轮 Tool Call 循环
+        result = Runner.run_sync(agent, input=current_input)
+                                                                                                                        
+        # 更新多轮对话历史                                                                                             
+        conversation_history = result.to_input_list()                                                                  
+                                                                                                                        
+        print("\n\033[32mFinal Answer:\033[0m")                                                                        
+        print(result.final_output)                                                                                     
+        print()                                                                                                        
+                                                                                                                        
+if __name__ == "__main__":                                                                                             
+        main()
+```
+
+构建一个 [tools.py](https://github.com/kongds1999/agent_from_scratch/blob/main/tools.py) 文件，放置同目录下即可，用于定义本次可使用的工具，添加以下几个基础工具:
+
+```python
+from agents.decorators import function_tool
+from typing import Annotated, Dict, Optional
+import os, json, subprocess, glob as _glob
+
+
+# Global registry to store file contents before modification to allow 'undo' operations
+# Key: File path (str) | Value: Content (str) or None if file was newly created
+SNAPSHOTS: Dict[str, Optional[str]] = {}
+
+# 1. 危险命令黑名单与安全校验
+ALWAYS_BLOCKED_COMMANDS = ["rm", "sudo", "shutdown", "reboot", "dd", "mkfs", "kill", "killall", "> /dev/", ":(){ :|:& };:"]
+
+@function_tool
+def run_bash(command: Annotated[str, "The bash command to run"]) -> str:
+    """Executes a shell command synchronously in the current working directory."""
+    # UI: 黄色高亮打印工具调用，参考 01_agent_loop.py / core.py 中的 dispatch_tools
+    pass
+    
+
+@function_tool
+def read_file(
+    path: Annotated[str, "Path to the file"], 
+    start_line: Annotated[int, "The starting line number (1-indexed)"] = None, 
+    end_line: Annotated[int, "The ending line number (1-indexed)"] = None
+) -> str:
+    """Reads a file from disk with optional line-range slicing and line numbering."""
+    pass
+
+@function_tool
+def write_file(
+    path: Annotated[str, "Destination path to write to"],
+    content: Annotated[str, "Content to write to the file"]
+) -> str:
+    """Writes content to a file and stores a snapshot for potential restoration."""
+    pass
+    
+@function_tool
+def run_grep(
+    pattern: Annotated[str, "The regex pattern to search for"],
+    path: Annotated[str, "Path to the file to search in"],
+    recursive: Annotated[bool, "Whether to search recursively in directories"] = False
+) -> str:
+    """Performs a regex search within files using system grep or Windows findstr."""
+    pass
+    
+@function_tool
+def run_glob(
+    pattern: Annotated[str, "The glob pattern to match files"]
+) -> str:
+    """Locates files matching a specific glob pattern."""
+    pass
+
+
+@function_tool
+def revert_file(
+    path: Annotated[str, "Path to the file to revert"]
+) -> str:
+    """Reverts a file to its previous state using the stored snapshot."""
+    pass
+
+
+AGENT_TOOLS = [run_bash, read_file, write_file, run_grep, run_glob, revert_file]
+```
+
+
+
+一个会使用`bash`工具的`agent`：
+
+```bash
+❯ python 01_agent_loop.py
+ openai-agents-code v0.1.0
+> say hello with bash
+[bash] echo hello...
+hello
+
+Final Answer:
+hello
+
+> 现在几点
+[bash] date '+%H:%M:%S %Z'...
+18:54:39 CST
+
+Final Answer:
+现在是 18:54:39 CST。
+```
+
+
+
+## 下一步
+ 
+单步工具调用让 Agent 具备了行动能力，但面对复杂的多步骤长任务时，Agent 很容易遗漏步骤甚至偏离目标。
+ 
+- [Agent 式规划与状态跟踪（Todo Write）](./03_todo_write)：为 Agent 引入结构化计划与任务状态追踪系统
+- [子 Agent 与任务转移（Handoffs）](./04_subagent)：将复杂任务委派给专职子 Agent
+

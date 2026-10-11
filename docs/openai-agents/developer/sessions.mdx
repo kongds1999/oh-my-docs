@@ -1,0 +1,806 @@
+---
+title: "Session Management"
+sidebarTitle: "Session 管理"
+description: "深入解析 OpenAI Agents SDK 的会话持久化与管理架构，涵盖内置 Session、多数据库扩展（SQLite/MySQL/PostgreSQL/Redis/MongoDB）以及企业级多租户落地的架构权衡。"
+---
+
+在构建具备生产级交互能力的 AI Agent 时，状态持久化与上下文连续性是系统设计的核心基石。本文将全面剖析 OpenAI Agents SDK 的会话管理机制（Session Management），深入解析底层 Protocol 接口、内置存储引擎与生产级多数据库扩展，并结合企业级复杂场景探讨架构选型权衡。
+
+---
+
+## 核心概念：为什么需要 Session 管理？
+
+### AI 交互的易变性（Volatility）与上下文丢失
+
+大型语言模型（LLM）天然是无状态（Stateless）的。在最原始的对话模式中，Agent 的上下文仅短暂保存在进程内存列表中。一旦脚本退出、容器重启或网络中断，先前的所有交互上下文、工具调用链与反思结果都会烟消云散。这种**交互的易变性（Volatility）**导致了以下痛点：
+
+1. **状态易失**：无法支持用户的跨设备访问或异步离线恢复。
+2. **手写序列化成本高昂**：Agent 的上下文不仅包含用户输入与模型回复，还包括复杂的 `ToolCall`、`ToolResult`、`ReasoningContent` 等结构化对象。手动解析和转换这些对象极易出错且维护成本极高。
+3. **并发安全与数据污染**：在多会话并发访问时，缺乏事务保障和并发控制可能导致历史上下文错乱或并发写竞争。
+
+### Runner 与 Session 的自动化生命周期
+
+OpenAI Agents SDK 引入了 **Session 抽象层**。通过将 `session` 对象传递给 `Runner`，SDK 将开发者从繁琐的会话状态管理中彻底解放出来。
+
+```python
+# 传统手动管理方式：繁琐且易丢状态
+messages.append({"role": "user", "content": query})
+result = await Runner.run(agent, input=messages)
+messages = result.to_input_list() # 手动保存并序列化
+
+# 原生 Session 管理方式：全自动化、开箱即用
+result = await Runner.run(agent, input=query, session=session)
+```
+
+在传入 `session` 后，`Runner` 会自动托管整个交互生命周期：
+
+```mermaid
+flowchart TD
+    A["用户发起请求: Runner.run(agent, input, session)"] --> B["1. 自动拉取历史: session.get_items(limit)"]
+    B --> C["2. 拼接当前输入与完整历史上下文"]
+    C --> D["3. 进入 ReAct 循环: LLM 推理与 Tool 执行"]
+    D --> E{"是否产生新状态 / 工具调用？"}
+    E -- 是 --> F["内部处理中间事件与流式返回"]
+    E -- 否 --> G["4. 循环结束，生成最终结果"]
+    F --> D
+    G --> H["5. 自动序列化并持久化落盘: session.add_items(...)"]
+    H --> I["返回 RunResult 给调用方"]
+```
+
+- **自动加载**：在每次执行前，`Runner` 调用 `session.get_items()` 拉取历史消息。
+- **自动编排**：自动在上下文窗口中组织历史消息、系统提示词与本轮输入。
+- **自动落盘**：在 Agent 完成推理与工具调用后，`Runner` 自动将本轮新增的所有 items 序列化并写入持久化存储（`session.add_items()`）。
+
+---
+
+## Session 抽象机制与 Protocol 架构
+
+OpenAI Agents SDK 遵循**面向接口编程**的设计哲学，将执行引擎（`Runner`）与底层持久化介质完全解耦。
+
+### `Session` Protocol 与 `SessionABC`
+
+SDK 在 `agents.memory.session` 中定义了结构契约：
+
+```python
+@runtime_checkable
+class Session(Protocol):
+    session_id: str
+    session_settings: SessionSettings | None = None
+
+    async def get_items(self, limit: int | None = None) -> list[TResponseInputItem]: ...
+    async def add_items(self, items: list[TResponseInputItem]) -> None: ...
+    async def pop_item(self) -> TResponseInputItem | None: ...
+    async def clear_session(self) -> None: ...
+```
+
+对于 SDK 内部与官方扩展包，提供了继承基类 `SessionABC`（继承自 `abc.ABC`）。第三方扩展既可以继承 `SessionABC`，也可以通过 Python 的结构子类型（Structural Subtyping / Duck Typing）直接实现 `Session` 协议。
+
+### 四大核心方法职责剖析
+
+| 方法签名 | 核心职责与设计要点 |
+| :--- | :--- |
+| `async def get_items(limit: int \| None = None)` | **读取历史上下文**。按时间升序（Chronological Order）返回消息项。支持传入 `limit` 参数以截取最新的 $N$ 条上下文，防止超长上下文击穿模型窗口。 |
+| `async def add_items(items: list[TResponseInputItem])` | **追加持久化记录**。在 Agent 完成一轮执行后，将新增的输入输出、工具调用及推理过程批量写入底层存储。必须具备原子性保障。 |
+| `async def pop_item()` | **弹出末尾项**。移除并返回最近一条历史项。常用于在异常回滚、用户撤销最后一次输入或重试时恢复状态。 |
+| `async def clear_session()` | **重置会话**。物理清理当前会话标识下的所有上下文数据，恢复至全新对话状态。 |
+
+### 解耦架构的优势
+
+`Runner` 在底层执行时仅与 `Session` Protocol 约定的方法交互。这意味着上层业务逻辑无需知晓底层究竟是轻量级 SQLite 文件、分布式 Redis 集群，还是企业级 PostgreSQL 数据库。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 用户 / 上层业务
+    participant Runner as SDK Runner
+    participant Agent as Agent 实例
+    participant Session as Session 实现 (SQLite / Redis / PG)
+
+    User->>Runner: run(agent, input="天气如何", session=session)
+    Runner->>Session: get_items(limit=settings.limit)
+    Session-->>Runner: 返回历史 items 列表
+    Runner->>Agent: 组装Prompt，触发模型推理与工具调用
+    Agent-->>Runner: 完成 ReAct 循环，产生新项 (New Items)
+    Runner->>Session: add_items(new_items)
+    Session-->>Runner: 确认持久化完成
+    Runner-->>User: 返回 RunResult (final_output)
+```
+
+---
+
+## 官方内置核心 Session 类型
+
+OpenAI Agents SDK 原生内置了三种具有代表性的 Session 实现，分别适用于本地开发、服务端托管与上下文紧凑化场景。
+
+### 1. `SQLiteSession`：开箱即用的本地嵌入式存储
+
+`SQLiteSession` 是最常用的本地持久化实现，内置于 `agents.memory` 中。
+
+```python
+from agents import SQLiteSession
+
+# 1. 内存临时会话（进程退出后释放）
+mem_session = SQLiteSession(session_id="session_001")
+
+# 2. 本地文件持久化会话
+file_session = SQLiteSession(
+    session_id="session_001",
+    db_path=".sessions/agent_history.db"
+)
+```
+
+#### 关键技术内幕
+- **WAL 模式并发优化**：内部在连接初始化时执行 `PRAGMA journal_mode=WAL`，开启写前日志模式。读写互不阻塞，极大提升了本地并发性能。
+- **线程安全锁管理**：针对共享同一个 SQLite 文件路径的多个会话实例，`SQLiteSession` 在类级别维护了基于路径规范化（`resolve()`）的互斥重入锁（`threading.RLock`）与引用计数，杜绝多线程下的并发写入死锁（Database Locked）。
+- **`limit` 窗口控制**：支持通过 `SessionSettings(limit=20)` 限制回读的历史消息轮数，自动截取最近的上下文。
+- **底层表结构规范**：
+  - `agent_sessions`：维护 `session_id`、`created_at` 与 `updated_at`。
+  - `agent_messages`：包含自增主键 `id`、`session_id`、JSON 字符串 `message_data` 以及级联删除外键。
+
+### 2. `OpenAIConversationsSession`：OpenAI 服务端托管会话
+
+当希望完全将状态托管在 OpenAI 云端，减少本地数据库维护负担时，可以使用 `OpenAIConversationsSession`。
+
+```python
+from agents import OpenAIConversationsSession
+
+# 懒加载初始化服务端会话
+session = OpenAIConversationsSession(
+    conversation_id="conv_abc123"  # 若为 None，则在首次调用时自动通过 API 创建
+)
+```
+
+- **状态云端化**：底层的历史上下文存储在 OpenAI 的 Conversations 资源中，通过 `openai_client.conversations.items.list()` 与 `create()` 操作同步。
+- **轻量客户端**：本地不持有任何数据库文件，适合无状态的 Serverless 函数（如 AWS Lambda、Cloudflare Workers）。
+
+### 3. `OpenAIResponsesCompactionSession`：上下文智能压缩包装器
+
+长对话过程中，Token 消耗急剧膨胀是所有 Agent 面临的严峻挑战。`OpenAIResponsesCompactionSession` 采用装饰器/包装器模式，包装任意基础 Session。
+
+```python
+from agents.memory import OpenAIResponsesCompactionSession, SQLiteSession
+
+base_session = SQLiteSession(session_id="session_compaction", db_path="chat.db")
+
+compacted_session = OpenAIResponsesCompactionSession(
+    session=base_session,
+    compaction_threshold=10,  # 当累积超过 10 条候选项时自动触发压缩
+)
+```
+
+- **压缩过滤机制**：自动识别并保护用户核心提问，重点对历史中间步骤的繁琐工具输出、反思过程进行结构化摘要压缩。
+- **透明透明**：上层使用方式与普通 Session 完全一致，在读取时透明返回压缩后的紧凑上下文，显著降低模型开销并避免窗口超限。
+
+---
+
+## 扩展多数据库存储支持（MySQL / PostgreSQL / Redis / MongoDB）
+
+在生产环境中，单机 SQLite 无法满足高可用、横向扩容与团队协作的需求。SDK 原生提供了扩展包 `agents.extensions.memory`，支持主流企业级数据库。
+
+### 1. `SQLAlchemySession`：企业级关系型数据库适配（MySQL / PostgreSQL）
+
+`SQLAlchemySession` 基于 SQLAlchemy 2.0 异步引擎开发，可适配支持异步驱动的主流关系型数据库（如 PostgreSQL 的 `asyncpg`、MySQL 的 `aiomysql` 等）。
+
+#### 安装依赖
+```bash
+pip install "openai-agents[sqlalchemy]" asyncpg aiomysql
+```
+
+#### 生产级表结构规范（DDL）
+官方扩展包遵循如下表结构约定：
+
+```sql
+-- 会话元数据表
+CREATE TABLE agent_sessions (
+    session_id VARCHAR(255) PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 会话消息历史表
+CREATE TABLE agent_messages (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    session_id VARCHAR(255) NOT NULL,
+    message_data TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_session_id FOREIGN KEY (session_id) 
+        REFERENCES agent_sessions (session_id) ON DELETE CASCADE
+);
+
+-- 时间序复合索引，确保快速切片读取
+CREATE INDEX idx_agent_messages_session_time 
+    ON agent_messages (session_id, created_at);
+```
+
+#### 代码实现与引擎接入
+```python
+from sqlalchemy.ext.asyncio import create_async_engine
+from agents.extensions.memory import SQLAlchemySession
+from agents import Agent, Runner
+
+# 1. 创建高性能异步数据库引擎（以 PostgreSQL 为例）
+DATABASE_URL = "postgresql+asyncpg://postgres:secret@db.internal:5432/agent_prod"
+engine = create_async_engine(
+    DATABASE_URL,
+    pool_size=20,
+    max_overflow=10,
+    pool_pre_ping=True,
+)
+
+# 2. 初始化持久化 Session
+session = SQLAlchemySession(
+    session_id="tenant_001_user_888",
+    engine=engine,
+    create_tables=False,  # 生产环境推荐由 Alembic 迁移脚本管理表结构，设为 False
+    ensure_ascii=False,   # 保持原生 UTF-8 中文存储，避免被转义为 \uXXXX
+)
+
+# 3. 与 Runner 协同执行
+agent = Agent(name="SalesBot", model="gpt-5.5")
+result = await Runner.run(agent, "请总结上个季度的核心指标", session=session)
+```
+
+<Info>
+**自动与手动初始化建表**：
+如果是在开发测试阶段，可以将 `create_tables=True` 或直接使用工厂方法 `SQLAlchemySession.from_url(..., create_tables=True)`，SDK 将在首次连接时自动创建 `agent_sessions` 和 `agent_messages` 及其复合索引。
+</Info>
+
+---
+
+### 2. `RedisSession`：分布式高并发场景与 TTL 缓存机制
+
+在需要极高吞吐、毫秒级状态读取，或者会话具备明显生命周期的微服务场景中，Redis 是最理想的高速缓存型 Session 介质。
+
+#### 安装依赖
+```bash
+pip install "openai-agents[redis]" redis
+```
+
+#### 数据存储模型与并发控制
+`RedisSession` 将会话划分为三个核心键空间：
+- **元数据哈希（Hash）**：`{prefix}:{session_id}`，记录创建时间、修改时间等元数据。
+- **消息列表（List）**：`{prefix}:{session_id}:messages`，以有序列表形式依次 `RPUSH` 序列化后的消息 JSON。
+- **消息自增计数器**：`{prefix}:{session_id}:counter`。
+
+```mermaid
+flowchart LR
+    subgraph Redis 键空间设计
+        H["agent_session:{id} (Hash)\n- created_at\n- updated_at"]
+        L["agent_session:{id}:messages (List)\n[msg_0, msg_1, ..., msg_N]"]
+    end
+    
+    R["RedisSession"] -->|RPUSH 写入| L
+    R -->|LRANGE -N -1 读取最新| L
+    R -->|HSET 更新时间| H
+    R -->|EXPIREAT 同步设置过期| H
+    R -->|EXPIREAT 同步设置过期| L
+```
+
+#### 代码实现与 TTL 机制
+```python
+import redis.asyncio as aioredis
+from agents.extensions.memory import RedisSession
+from agents import Agent, Runner
+
+# 初始化异步 Redis 连接池
+redis_client = aioredis.from_url(
+    "redis://:password@redis.internal:6379/0",
+    decode_responses=True,
+    max_connections=50
+)
+
+session = RedisSession(
+    session_id="live_chat_user_999",
+    redis_client=redis_client,
+    key_prefix="agent_session", # 自定义 Redis Key 前缀
+    ttl=86400 * 7,              # 设置 7 天 TTL：每次写入自动刷新过期时间，实现滑动过期
+)
+
+await Runner.run(agent, "查询我的待办事项", session=session)
+```
+
+<Tip>
+**高效切片与事务原子性**：
+- 当调用 `get_items(limit=10)` 时，`RedisSession` 利用 `LRANGE key -10 -1` 从尾部直接拉取最后 10 条消息，时间复杂度仅为 $O(N)$，且无需在应用层反向截断。
+- 所有的写入操作（`add_items`）均封装在 `WATCH` / `MULTI` / `EXEC` 事务管线中，当检测到并发写冲突时支持自动重试，确保列表与元数据的一致性。
+</Tip>
+
+---
+
+### 3. `MongoDBSession`：文档数据库的弹性扩展方案
+
+对于偏好无模式（Schema-free）存储或已有 MongoDB 集群的架构，`MongoDBSession` 利用原生的异步客户端 `pymongo.asynchronous.AsyncMongoClient`（需 `pymongo>=4.14`）提供了支持。
+
+```python
+from pymongo.asynchronous.mongo_client import AsyncMongoClient
+from agents.extensions.memory import MongoDBSession
+
+mongo_client = AsyncMongoClient("mongodb://mongo.internal:27017")
+session = MongoDBSession(
+    session_id="doc_session_101",
+    client=mongo_client,
+    database="agents_db",
+    collection_name="chat_sessions",
+)
+```
+
+每个 Session 作为一个文档维护，或者采用子集合分片设计，非常适合存储包含多模态媒体块、动态扩展字段的复杂消息体。
+
+---
+
+## 完整实战代码示例：CLI 会话管理系统
+
+下面提供一个结构完整、兼具实用性与教学意义的 CLI 交互式代码示例。示例基于官方内置的 `SQLiteSession` 构建，演示了完整的持久化生命周期：**新建会话、自动落盘、断点恢复（`:resume`）、会话分叉（`:fork`）与元数据查看（`:sessions`）**。
+
+### 交互系统架构设计
+
+```mermaid
+flowchart TD
+    Prompt["终端命令行 REPL"] --> Dispatcher{"判断指令前缀"}
+    Dispatcher -- ":sessions" --> ListAction["扫描数据库列出所有会话"]
+    Dispatcher -- ":resume id" --> ResumeAction["实例化对应 ID 的 SQLiteSession 继续对话"]
+    Dispatcher -- ":fork id" --> ForkAction["读取源会话 get_items()，写入新 ID 的 Session"]
+    Dispatcher -- ":title name" --> TitleAction["更新会话业务标题"]
+    Dispatcher -- 普通输入 --> RunAction["Runner.run(agent, input, session=current_session)"]
+    RunAction --> AutoSave["SQLiteSession 自动提交 WAL 并完成持久化"]
+```
+
+### 完整源码实现
+
+```python
+#!/usr/bin/env python3
+"""
+interactive_session_cli.py: 基于 OpenAI Agents SDK SQLiteSession 实现的生产级会话管理系统。
+
+特性亮点：
+1. 原生持久化存储：基于 SQLiteSession，告别手动拼接 messages 与手写序列化。
+2. 断点恢复 (:resume)：跨进程随时唤起历史上下文。
+3. 会话分叉 (:fork)：无损深拷贝历史上下文至新会话分支，用于测试不同提示词策略。
+4. 元数据扩展：支持会话自定义标题与统计概览。
+"""
+
+import os
+import sys
+import uuid
+import sqlite3
+import asyncio
+from pathlib import Path
+from typing import List, Dict, Any, Optional
+
+from dotenv import load_dotenv
+from agents import (
+    Agent,
+    Runner,
+    SQLiteSession,
+    function_tool,
+    set_tracing_disabled,
+    set_default_openai_api,
+)
+
+# 环境配置与中转兼容
+load_dotenv()
+set_tracing_disabled(True)
+set_default_openai_api("chat_completions")
+
+# 存储路径
+SESSIONS_DIR = Path(".sessions")
+SESSIONS_DIR.mkdir(exist_ok=True)
+DB_PATH = SESSIONS_DIR / "agent_sessions.db"
+
+
+# ==========================================
+# 1. 业务工具与 Agent 定义
+# ==========================================
+
+@function_tool
+def calculate_expression(expression: str) -> str:
+    """计算数学表达式的结果。"""
+    try:
+        # 安全受限计算
+        allowed = {"__builtins__": {}}
+        return str(eval(expression, allowed, {}))
+    except Exception as e:
+        return f"计算错误: {e}"
+
+
+def get_agent() -> Agent:
+    return Agent(
+        name="SessionDemoAssistant",
+        model="gpt-5.5",
+        instructions=(
+            "你是一个具备上下文记忆的专业助手。"
+            "当用户需要复杂计算时，主动调用 calculate_expression 工具。"
+            "回答简明扼要，尊重历史上下文事实。"
+        ),
+        tools=[calculate_expression],
+    )
+
+
+# ==========================================
+# 2. 会话元数据管理（标题扩展）
+# ==========================================
+
+def init_metadata_schema(db_path: Path) -> None:
+    """初始化会话自定义元数据表。"""
+    with sqlite3.connect(str(db_path)) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS session_metadata (
+                session_id TEXT PRIMARY KEY,
+                title TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+
+
+def set_session_title(db_path: Path, session_id: str, title: str) -> None:
+    init_metadata_schema(db_path)
+    with sqlite3.connect(str(db_path)) as conn:
+        conn.execute("""
+            INSERT INTO session_metadata (session_id, title, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(session_id) DO UPDATE SET
+                title = excluded.title,
+                updated_at = CURRENT_TIMESTAMP
+        """, (session_id, title))
+        conn.commit()
+
+
+def get_session_title(db_path: Path, session_id: str) -> str:
+    if not db_path.exists():
+        return "新会话"
+    try:
+        with sqlite3.connect(str(db_path)) as conn:
+            cur = conn.execute(
+                "SELECT title FROM session_metadata WHERE session_id = ?",
+                (session_id,)
+            )
+            row = cur.fetchone()
+            return row[0] if row and row[0] else "新会话"
+    except sqlite3.OperationalError:
+        return "新会话"
+
+
+def session_exists(db_path: Path, session_id: str) -> bool:
+    if not db_path.exists():
+        return False
+    try:
+        with sqlite3.connect(str(db_path)) as conn:
+            cur = conn.execute(
+                "SELECT 1 FROM agent_sessions WHERE session_id = ?",
+                (session_id,)
+            )
+            return cur.fetchone() is not None
+    except sqlite3.OperationalError:
+        return False
+
+
+def list_sessions(db_path: Path) -> List[Dict[str, Any]]:
+    if not db_path.exists():
+        return []
+    try:
+        with sqlite3.connect(str(db_path)) as conn:
+            cur = conn.execute("""
+                SELECT 
+                    s.session_id, 
+                    s.updated_at, 
+                    COUNT(m.id) AS msg_count, 
+                    COALESCE(meta.title, '未命名会话') AS title
+                FROM agent_sessions s
+                LEFT JOIN agent_messages m ON s.session_id = m.session_id
+                LEFT JOIN session_metadata meta ON s.session_id = meta.session_id
+                GROUP BY s.session_id
+                ORDER BY s.updated_at DESC
+            """)
+            return [
+                {"id": r[0], "updated": str(r[1]), "count": r[2], "title": r[3]}
+                for r in cur.fetchall()
+            ]
+    except sqlite3.OperationalError:
+        return []
+
+
+# ==========================================
+# 3. 分叉与生命周期操作
+# ==========================================
+
+async def fork_session(db_path: Path, source_id: str) -> Optional[SQLiteSession]:
+    """基于旧会话历史数据创建独立新分支。"""
+    if not session_exists(db_path, source_id):
+        return None
+
+    # 1. 读出源会话的所有历史条目
+    source = SQLiteSession(session_id=source_id, db_path=db_path)
+    history_items = await source.get_items()
+
+    # 2. 生成新会话并写入历史
+    new_id = uuid.uuid4().hex[:8]
+    forked = SQLiteSession(session_id=new_id, db_path=db_path)
+    if history_items:
+        await forked.add_items(history_items)
+
+    # 3. 关联元数据
+    source_title = get_session_title(db_path, source_id)
+    set_session_title(db_path, new_id, f"Fork: {source_title}")
+    return forked
+
+
+def print_sessions_table(db_path: Path) -> None:
+    sessions = list_sessions(db_path)
+    if not sessions:
+        print("  \033[90m(当前数据库尚无历史会话)\033[0m")
+        return
+
+    print("\n  \033[4mID        更新时间             历史项数   标题\033[0m")
+    for s in sessions:
+        up_time = s["updated"][:19] if s["updated"] else "Unknown"
+        print(f"  \033[36m{s['id']:8}\033[0m  {up_time:19}  {s['count']:4} 项    {s['title']}")
+    print()
+
+
+# ==========================================
+# 4. 交互式主控制台 (REPL)
+# ==========================================
+
+async def main():
+    init_metadata_schema(DB_PATH)
+    agent = get_agent()
+
+    # 初始化默认会话
+    initial_id = uuid.uuid4().hex[:8]
+    current_session = SQLiteSession(session_id=initial_id, db_path=DB_PATH)
+    set_session_title(DB_PATH, initial_id, "新会话")
+
+    print("\033[90m============================================================\033[0m")
+    print("\033[32mOpenAI Agents SDK - Session Management REPL\033[0m")
+    print("支持指令:")
+    print("  \033[33m:sessions\033[0m        - 列出所有持久化会话")
+    print("  \033[33m:resume <id>\033[0m     - 恢复指定会话历史")
+    print("  \033[33m:fork <id>\033[0m       - 分叉指定会话建立新分支")
+    print("  \033[33m:title <名称>\033[0m    - 修改当前会话标题")
+    print("  \033[33mexit / quit\033[0m      - 退出程序")
+    print("\033[90m============================================================\033[0m\n")
+    print(f"当前活动会话 ID: \033[36m{current_session.session_id}\033[0m\n")
+
+    while True:
+        try:
+            user_input = input(f"\033[36m[{current_session.session_id}]\033[0m > ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print(f"\n\033[90m会话已自动落盘至 {DB_PATH}。安全退出。\033[0m")
+            break
+
+        if not user_input:
+            continue
+        if user_input.lower() in ("exit", "quit", "q"):
+            print(f"\033[90m会话已自动落盘。再见！\033[0m")
+            break
+
+        # 指令分发
+        if user_input == ":sessions":
+            print_sessions_table(DB_PATH)
+            continue
+
+        if user_input.startswith(":resume "):
+            target_id = user_input[8:].strip()
+            if session_exists(DB_PATH, target_id):
+                current_session = SQLiteSession(session_id=target_id, db_path=DB_PATH)
+                items = await current_session.get_items()
+                title = get_session_title(DB_PATH, target_id)
+                print(f"  \033[32m✔ 已切换至会话 [{target_id}] - '{title}' (共 {len(items)} 条上下文项)\033[0m\n")
+            else:
+                print(f"  \033[31m✘ 错误: 未找到 ID 为 '{target_id}' 的会话\033[0m\n")
+            continue
+
+        if user_input.startswith(":fork "):
+            source_id = user_input[6:].strip()
+            forked_session = await fork_session(DB_PATH, source_id)
+            if forked_session:
+                current_session = forked_session
+                print(f"  \033[32m✔ 成功从 [{source_id}] 分叉出新会话: [{current_session.session_id}]\033[0m\n")
+            else:
+                print(f"  \033[31m✘ 错误: 源会话 '{source_id}' 不存在\033[0m\n")
+            continue
+
+        if user_input.startswith(":title "):
+            new_title = user_input[7:].strip()
+            set_session_title(DB_PATH, current_session.session_id, new_title)
+            print(f"  \033[32m✔ 当前会话标题已更新为: '{new_title}'\033[0m\n")
+            continue
+
+        # 若是新会话第一次对话，自动更新标题
+        curr_title = get_session_title(DB_PATH, current_session.session_id)
+        if curr_title == "新会话":
+            set_session_title(DB_PATH, current_session.session_id, user_input[:30])
+
+        # 执行问答：传入 session 参数即可实现自动加载与自动持久化
+        try:
+            result = await Runner.run(agent, input=user_input, session=current_session)
+            print(f"\n\033[32m[回答]\033[0m {result.final_output}\n")
+        except Exception as e:
+            print(f"\n\033[31m[执行失败]\033[0m {e}\n")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### 交互体验演示
+
+```text
+============================================================
+OpenAI Agents SDK - Session Management REPL
+支持指令:
+  :sessions        - 列出所有持久化会话
+  :resume <id>     - 恢复指定会话历史
+  :fork <id>       - 分叉指定会话建立新分支
+  :title <名称>    - 修改当前会话标题
+  exit / quit      - 退出程序
+============================================================
+
+当前活动会话 ID: 4a9f8b1c
+
+[4a9f8b1c] > 请帮我记住：项目代号是 Apollo-13，预算为 5000 万
+[回答] 收到！我已经记住了：项目代号为 Apollo-13，预算金额为 5000 万。
+
+[4a9f8b1c] > 计算一下如果预算追加 15%，总预算是多少？
+[回答] 追加 15% 后的总预算为 5750 万。
+
+[4a9f8b1c] > :sessions
+  ID        更新时间             历史项数   标题
+  4a9f8b1c  2026-10-07 20:30:15     4 项    请帮我记住：项目代号是 Apollo-13
+
+[4a9f8b1c] > :fork 4a9f8b1c
+  ✔ 成功从 [4a9f8b1c] 分叉出新会话: [7e12df0a]
+
+[7e12df0a] > 我们现在的预算是多少？代号是什么？
+[回答] 我们当前项目的代号是 Apollo-13，总预算在追加 15% 之后是 5750 万。
+```
+
+<Check>
+**完全无痛的状态接续**：通过分叉新会话 `7e12df0a`，我们完全保留了上一个分支的完整计算和代号事实，同时后续在分叉上的探索绝不会污染原始会话 `4a9f8b1c`。
+</Check>
+
+---
+
+## 企业级架构思考：何时采用 SessionABC vs 何时外置管理？
+
+在真实企业级复杂生产环境（例如短剧/AI 创作平台 `ai_video_be` 的 `agent_v3` 微服务）中，技术团队在接入 OpenAI Agents SDK 时常常面临一个深层抉择：**是直接套用 SDK 的 `SessionABC` 托管，还是采用由外部业务表驱动、内存组装的混合架构？**
+
+### 阻抗失配（Impedance Mismatch）的四大根源深度剖析
+
+很多团队在初期试图将所有业务会话直接实现为 `SessionABC`，但在业务快速扩展时，往往会遭遇严重的“架构阻抗失配”：
+
+```mermaid
+classDiagram
+    class SDK_SessionABC {
+        <<Protocol>>
+        +session_id: str
+        +get_items(limit)
+        +add_items(items)
+        +pop_item()
+        +clear_session()
+    }
+    
+    class Enterprise_Business_Model {
+        <<Relational DB>>
+        +id: bigint (PK)
+        +session_uuid: char(36)
+        +company_id: bigint (多租户)
+        +drama_id: bigint (业务作用域)
+        +user_id: bigint (权限隔离)
+        +delete_time: timestamp (软删除)
+        +input_tokens: int
+        +output_tokens: int
+        +duration_ms: int
+        +end_status: enum (completed/aborted/failed)
+        +content_blocks: json (结构化卡片契约)
+    }
+
+    SDK_SessionABC ..> Enterprise_Business_Model : ❌ 粒度冲突、租户隔离缺失、契约破坏
+```
+
+#### 1. Turn 粒度 vs 业务整轮 Run 粒度的冲突
+- **SDK 设计假设**：`SessionABC.add_items()` 倾向于精细记录模型的每一个底层事件项（`message`、`tool_call`、`tool_result`）。
+- **业务系统现实**：在复杂企业业务中，用户发起一次对话（一个完整 Run），后端 Agent 可能串行执行了 10 轮工具调用与自我修正。业务层数据库（如 `agent_chat_message`）通常要求**一整轮 Run 只生成一条统一的 Assistant 消息行**，其内部以结构化内容块数组（`content_blocks`）聚合展示思考过程、操作卡片与最终文本。如果每次细粒度 turn 都在底层打散入库，不仅前端轮询/流式回读会产生混乱，还会导致数据库行数发生数量级爆炸。
+
+#### 2. 多租户隔离、软删除与数据合规索引
+- **SDK 限制**：`SessionABC` 核心方法仅接受单一的 `session_id: str`。
+- **业务系统现实**：SaaS 平台必须满足严密的多租户数据隔离机制：
+  - 必须包含 `company_id`（企业隔离）、`user_id`（创建人）、`drama_id`/`project_id`（业务项目）。
+  - 严禁物理 `DELETE`，必须遵循 `delete_time` 软删除规范，并依赖复合索引（如 `idx_scope (company_id, project_id, delete_time)`）加速查询。
+  - 若强行将多租户信息编码进字符串（如 `tenant_123:user_456:session_789`），则无法进行联合索引查询与跨租户审计统计。
+
+#### 3. 财务报表、Token 计量与前端契约保护
+- 企业级系统在每一轮 Run 结束时，必须对消耗的模型 Token（`input_tokens`, `output_tokens`）、耗时（`duration_ms`）、首字生成耗时（`TTFT`）以及终态枚举（`end_status`: `completed` / `aborted` / `failed`）进行行级落库。这些字段直接与计费结算系统、财务对账和 Prometheus 监控指标挂钩。
+- 前端交互界面依赖极其严苛的 JSON 数据契约（如步骤折叠、卡片高亮）。SDK 底层自带的数据格式（如内部对象 `compaction` 块）若直接落库，会直接冲穿前端解析器导致页面崩溃。
+
+#### 4. 请求期动态内存压缩 vs 物理落库污染
+- **长会话压缩**：当会话达到 30 轮、累计数万 Token 时，需要进行上下文压缩。
+- **优雅的工程实践**：如 `agent_v3` 的设计，压缩应当是**“请求期纯内存装配”**——在组装发往大模型的上下文时，动态对早前轮次提取文本并由轻量模型生成摘要插入 `system`，而**业务数据库内依然保留清晰完整的用户交互原貌**。
+- 若采用 SDK 默认落库的 Compaction 机制，压缩块将被物理写死在数据库中，破坏用户翻看完整历史的体验。
+
+---
+
+### 架构选型决策树
+
+面对不同复杂度场景，建议遵循以下决策流程：
+
+```mermaid
+flowchart TD
+    Start["评估业务与数据架构需求"] --> Q1{"是否有多租户隔离、企业级计费<br/>或专属前端卡片契约要求？"}
+    Q1 -- 否 (标准应用) --> Q2{"并发与可用性要求？"}
+    Q1 -- 是 (复杂 SaaS / 微服务) --> Hybrid["推荐: 外部业务表驱动 + 内存装配混合模式<br/>(例如 agent_v3 架构)"]
+    
+    Q2 -- 单机开发 / 本地脚本 --> SQLite["推荐: SQLiteSession<br/>(WAL 模式，开箱即用)"]
+    Q2 -- 云原生 Serverless --> Cloud["推荐: OpenAIConversationsSession<br/>(云端托管状态)"]
+    Q2 -- 高并发微服务集群 --> ChoiceDB{"数据持久化偏好？"}
+    
+    ChoiceDB -- 关系型 (PG / MySQL) --> SQLA["推荐: SQLAlchemySession<br/>(连接池 + 关系模型)"]
+    ChoiceDB -- 高速缓存 / 带 TTL --> Redis["推荐: RedisSession<br/>(事务管线 + 极速切片)"]
+```
+
+### 两种架构范式深度对比
+
+| 评估维度 | SDK 原生 Session（SessionABC） | 外部业务表驱动 + 内存装配（企业混合模式） |
+| :--- | :--- | :--- |
+| **典型代表** | `SQLiteSession`, `SQLAlchemySession`, `RedisSession` | `ai_video_be` (`agent_v3`), 大型行业 Agent 平台 |
+| **开发与接入成本** | **极低**（一行参数 `session=session`） | **中到高**（需自建数据库表、DTO 转换层与 Worker） |
+| **多租户与权限控制** | 较弱（仅依赖单一 `session_id` 字符串区分） | **极强**（支持 `company_id`、RBAC 权限及复合索引） |
+| **消息落地粒度** | 事件/Turn 细粒度追加 | **整轮 Run 业务聚合**（单条消息承载完整内容块） |
+| **监控与计费集成** | 需侵入拦截 Session 方法实现 | **原生支持**（数据表自带 Token 计数与计费状态） |
+| **上下文压缩控制** | 压缩块物理落库（SDK 托管） | **请求期纯内存合成**（数据库保留真实无损历史） |
+| **适用业务阶段** | 内部小工具、独立 Agent、轻量级对话 Bot | 商业化 SaaS、企业级复杂微服务、高可用生产系统 |
+
+### 企业混合模式实战架构参考（`agent_v3` 模式）
+
+在企业级微服务中，推荐将数据库作为单一事实来源（Single Source of Truth），在执行请求期将历史消息转换为 SDK 所需的输入：
+
+```python
+# 企业级 Worker 中的典型组装流程 (基于 agent_v3 实践)
+async def execute_agent_turn(session_uuid: str, company_id: int, user_query: str):
+    # 1. 严格的多租户与防删除校验，从业务表拉取完整历史
+    db_messages = await AgentChatMessage.objects.filter(
+        session_id=session_uuid,
+        company_id=company_id,
+        delete_time=0
+    ).order_by("id")
+
+    # 2. 转换为标准 LLM 上下文结构
+    llm_history = [msg.to_llm_format() for msg in db_messages]
+
+    # 3. 请求期轻量压缩（纯内存计算，不改写数据库）
+    summary, recent_history = compact_history_in_memory(llm_history, context_limit=128000)
+    
+    messages_for_run = []
+    if summary:
+        messages_for_run.append({"role": "system", "content": f"【前序背景事实摘要】:\n{summary}"})
+    messages_for_run.extend(recent_history)
+    messages_for_run.append({"role": "user", "content": user_query})
+
+    # 4. 执行 Agent (将组装好的 messages 直接传入 input，不传 SDK session)
+    result = await Runner.run(agent, input=messages_for_run)
+
+    # 5. 业务整轮 Run 终态落库 (记录 Token、耗时与结构化块)
+    await AgentChatMessage.objects.create(
+        session_id=session_uuid,
+        company_id=company_id,
+        role="assistant",
+        content_blocks=result.to_business_blocks(),
+        input_tokens=result.usage.input_tokens,
+        output_tokens=result.usage.output_tokens,
+        end_status="completed"
+    )
+```
+
+通过这种混合设计，既能充分利用 `Runner` 卓越的工具编排与 Agent 循环能力，又牢牢守住了企业级多租户安全、计费治理与前端数据契约底线。
+
+---
+
+## 参考链接
+
+- [OpenAI Agents SDK 官方存储模块 (agents.memory)](https://github.com/openai/openai-agents-python/tree/main/src/agents/memory) – 内置 `Session` 协议、`SQLiteSession` 与压缩机制源码。
+- [OpenAI Agents SDK 数据库扩展包 (agents.extensions.memory)](https://github.com/openai/openai-agents-python/tree/main/src/agents/extensions/memory) – 支持 SQLAlchemy、Redis、MongoDB 与 Dapr 的生产级扩展。
+- [SQLAlchemy 官方异步指南 (AsyncIO)](https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html) – 构建企业级异步数据库连接池的最佳实践。
+- [Redis 官方事务与管线文档](https://redis.io/docs/latest/develop/interact/transactions/) – 理解 WATCH 与 MULTI 原子操作。
+- [OpenAI Responses API 参考文档](https://platform.openai.com/docs/api-reference) – 深入理解会话底层项类型与上下文规范。
