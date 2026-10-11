@@ -1,0 +1,21 @@
+---
+title: "给 Agent 划清每次任务的边界"
+description: "agent 的注意力是有限资源，用显式的任务边界避免过度延伸与不足完成。"
+date: 2026-06-09
+---
+
+Anthropic 在 "Effective harnesses for long-running agents" 工程博客中明确指出：当提示太宽泛时，agent 倾向于"同时启动多件事"而非"先做完一件事"。OpenAI 在 Codex 工程实践中也发现，没有显式范围控制的任务，完成率会暴跌。
+<Note>
+## 注意力是有限的资源
+</Note>
+- **过度延伸-Overreach**
+	同时做多个功能但0个跑通。
+- **不足完成-Under-finish**
+	已启动的任务中，通过端到端验证的比例低于阈值，写了但没通过测试。
+- **WIP限制 Work-in-Progress Limit**
+	对于agent，WIP=1是安全默认值，做完一个再做下一个。
+- **完成证据** **Completion Evidence**
+	任务从「进行中」到「已完成」必须满足可验证的条件，而不是由 agent 判断代码看起来没问题。
+- **范围表面 Scope Surface**
+	一个 DAG 结构，每个节点为工作单元，边是依赖关系。状态有四种：未开始、进行中、阻塞、已通过。
+![](/images/posts/task-boundaries/94b65d39e0.png)

@@ -1,0 +1,28 @@
+---
+title: "Harness 定义"
+description: "Harness 是模型之外的一切：指令、工具、环境、状态管理与验证反馈。"
+date: 2026-05-16
+---
+
+想象你是一个刚入职的工程师，被丢进一个没有任何文档的项目里。没有 README，代码里没有注释，没有人告诉你怎么跑测试，CI 配置文件藏在某个角落里。你能写出好代码吗？也许能——如果你足够聪明又足够有耐心。但你会花大量时间在"搞清楚这个项目是怎么回事"上，而不是在"解决问题"上。
+## 一些核心概念
+- **仓库是唯一事实来源**：agent 看不到的东西，对它来说就不存在。
+- **给地图，不给说明书**：OpenAI 的经验——`AGENTS.md` 应该是目录页，不是百科全书。
+- **约束而非微操**：好的 harness 用可执行的规则来约束 agent，而不是在指令里逐条叮嘱。
+## harness 的五个子系统
+![](/images/posts/harness-definition/54047b1d60.png)
+1. **指令**：创建 `AGENTS.md`（或 `CLAUDE.md`）。
+	内容包括项目概览和目的（一句话说清楚这是什么）、技术栈和版本（Python 3.11、FastAPI 0.100+、PostgreSQL 15）、首次运行命令（`make setup`、`make test`）、不可违反的硬约束（"所有 API 必须走 OAuth 2.0"）、指向更详细文档的链接、按需读取等。
+2. **工具**：确保 agent 有足够的工具访问权限。
+	不要因为"安全考虑"把 shell 给禁了——agent 连 `pip install` 都跑不了，还怎么干活？但也别什么都开放，按最小权限原则来。
+3. **环境**：让环境状态自描述。用 `pyproject.toml` 或 `package.json` 锁定依赖，用 `.nvmrc` 或 `.python-version` 指定运行时版本，用 Docker 或 devcontainer 让环境可重现。
+4. **状态**：长任务必须有进度跟踪。
+	用一个简单的 `PROGRESS.md` 文件记录：哪些做完了，哪些在做，哪些被阻塞。每个会话结束前更新，下一个会话开始时读取。
+5. **反馈**：这是投入产出比最高的子系统。在 `AGENTS.md` 里显式列出验证命令：
+	```markdown
+验证命令：
+- 测试：pytest tests/ -x
+- 类型检查：mypy src/ --strict
+- Lint：ruff check src/
+- 完整验证：make check（包含以上全部）
+	```

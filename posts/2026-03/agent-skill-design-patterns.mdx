@@ -1,0 +1,188 @@
+---
+title: "5 个常用的 Agent Skill 设计模式"
+description: "本文不解释如何打包 skill，而是注重如何构建内容逻辑。"
+date: 2026-03-18
+---
+
+![](/images/posts/agent-skill-design-patterns/7a8344e1d5.png)
+<Note>
+本文档不解释如何打包 skill，而是注重如何构建内容逻辑。
+原文：[Google Cloud Tech on Twitter / X](https://x.com/GoogleCloudTech/status/2033953579824758855?s=20)
+</Note>
+以下是五种反复出现可以帮助开发者构建 Agent 的设计模式：
+# The Tool Wrapper
+> 需要用到一个工具，只需要想起来它，至于怎么用，把`conventions`加载进来你就知道。
+![](/images/posts/agent-skill-design-patterns/a76cd5164c.png)
+「工具包装器」为 Agent 提供特定库的**按需**上下文，不是把 `API` 的惯例/约定（`conventions`）硬编码到 `system prompt` ，而是将其打包到 `skill` 中，`Agent` 只有在实际使用该技术时才加载这些上下文。
+最简单的实现模式：`SKILL.md` 文件（尤其是 `description` 字段）监听用户提示符中特定库关键词，动态加载引用内部文档，并将这些规则作为绝对真理应用。
+一个关于告诉 `Agent` 如何编写 `FastAPI` 代码的示例：
+```markdown
+# skills/api-expert/SKILL.md
+---
+name: api-expert
+description: FastAPI development best practices and conventions. Use when building, reviewing, or debugging FastAPI applications, REST APIs, or Pydantic models.
+metadata:
+  pattern: tool-wrapper
+  domain: fastapi
+---
+
+You are an expert in FastAPI development. Apply these conventions to the user's code or question.
+
+## Core Conventions
+
+Load 'references/conventions.md' for the complete list of FastAPI best practices.
+
+## When Reviewing Code
+1. Load the conventions reference
+2. Check the user's code against each convention
+3. For each violation, cite the specific rule and suggest the fix
+
+## When Writing Code
+1. Load the conventions reference
+2. Follow every convention exactly
+3. Add type annotations to all function signatures
+4. Use Annotated style for dependency injection
+```
+# The Generator
+> `Tool wrapper` 编排应用上下文，而 `Generator` 通过编排**「fill-in-the-blank」**强调一致的输出格式。
+![](/images/posts/agent-skill-design-patterns/917c32c6ec.png)
+通过以下两个可选目录：
+	- `assets/`：输出模板
+	- `references/`：样式指南
+这告诉 `Agent` 执行加载模板-阅读样式指南-询问用户确实变量-填充文档，对于生成可预测的`API`文档、标准化提交消息或构建项目架构非常实用。
+以下示例中，`SKILL.md` 文档本身不包含实际的布局或语法规则，仅仅负责协调这些规则的检索，并强调代理一步步执行：
+```markdown
+# skills/report-generator/SKILL.md
+---
+name: report-generator
+description: Generates structured technical reports in Markdown. Use when the user asks to write, create, or draft a report, summary, or analysis document.
+metadata:
+  pattern: generator
+  output-format: markdown
+---
+
+You are a technical report generator. Follow these steps exactly:
+
+Step 1: Load 'references/style-guide.md' for tone and formatting rules.
+
+Step 2: Load 'assets/report-template.md' for the required output structure.
+
+Step 3: Ask the user for any missing information needed to fill the template:
+- Topic or subject
+- Key findings or data points
+- Target audience (technical, executive, general)
+
+Step 4: Fill the template following the style guide rules. Every section in the template must be present in the output.
+
+Step 5: Return the completed report as a single Markdown document.
+```
+# The Reviewer
+`Reviewer` 模式将**「what to check」**和**「how to check it」**区分开来，不在 `system prompt` 写冗长的描述，而是在 `references/review-checklist.md `中存储模块化的评判标准。
+![](/images/posts/agent-skill-design-patterns/1c9a7fb126.png)
+当用户提交代码时，`Agent` 会加载 `checklist` 并按照严重程度进行系统性评分，使用 `OWASP` 安全检查表，你会得到专业的审计结果，可以在人工查看代码前自动完成公关审查或发现漏洞。
+```markdown
+# skills/code-reviewer/SKILL.md
+---
+name: code-reviewer
+description: Reviews Python code for quality, style, and common bugs. Use when the user submits code for review, asks for feedback on their code, or wants a code audit.
+metadata:
+  pattern: reviewer
+  severity-levels: error,warning,info
+---
+
+You are a Python code reviewer. Follow this review protocol exactly:
+
+Step 1: Load 'references/review-checklist.md' for the complete review criteria.
+
+Step 2: Read the user's code carefully. Understand its purpose before critiquing.
+
+Step 3: Apply each rule from the checklist to the code. For every violation found:
+- Note the line number (or approximate location)
+- Classify severity: error (must fix), warning (should fix), info (consider)
+- Explain WHY it's a problem, not just WHAT is wrong
+- Suggest a specific fix with corrected code
+
+Step 4: Produce a structured review with these sections:
+- **Summary**: What the code does, overall quality assessment
+- **Findings**: Grouped by severity (errors first, then warnings, then info)
+- **Score**: Rate 1-10 with brief justification
+- **Top 3 Recommendations**: The most impactful improvements
+```
+# Inversion
+`Agent` 天然地希望立即响应用户的提问，`Inversion`模式颠覆了这一范式：不需要用户驱动提示来完成任务，而是 `Agent` 本身扮演访谈者的角色。
+![](/images/posts/agent-skill-design-patterns/988a96962d.png)
+`Inversion` 模式依赖明确且不可协商的门槛指令（如“在所有阶段完成前不要开始构建”）来强制 `Agent` 代理先收集上下文，它会依次提出结构化问题，等待你的回答再进入下一阶段，此时 `Agent` 会拒绝综合最终输出，直到它对你的需求和部署约束有了完整了解。
+以下是一个项目规划的`SKILL`示例，关键在于严格的分阶段和明确的门槛提示，组织`Agent`在收集完用户所有答案前综合最终计划：
+```markdown
+# skills/project-planner/SKILL.md
+---
+name: project-planner
+description: Plans a new software project by gathering requirements through structured questions before producing a plan. Use when the user says "I want to build", "help me plan", "design a system", or "start a new project".
+metadata:
+  pattern: inversion
+  interaction: multi-turn
+---
+
+You are conducting a structured requirements interview. DO NOT start building or designing until all phases are complete.
+
+## Phase 1 — Problem Discovery (ask one question at a time, wait for each answer)
+
+Ask these questions in order. Do not skip any.
+
+- Q1: "What problem does this project solve for its users?"
+- Q2: "Who are the primary users? What is their technical level?"
+- Q3: "What is the expected scale? (users per day, data volume, request rate)"
+
+## Phase 2 — Technical Constraints (only after Phase 1 is fully answered)
+
+- Q4: "What deployment environment will you use?"
+- Q5: "Do you have any technology stack requirements or preferences?"
+- Q6: "What are the non-negotiable requirements? (latency, uptime, compliance, budget)"
+
+## Phase 3 — Synthesis (only after all questions are answered)
+
+1. Load 'assets/plan-template.md' for the output format
+2. Fill in every section of the template using the gathered requirements
+3. Present the completed plan to the user
+4. Ask: "Does this plan accurately capture your requirements? What would you change?"
+5. Iterate on feedback until the user confirms
+```
+# The Pipeline
+对于复杂任务，不能跳过步骤或忽略指令，`pipeline` 强制执行严格顺序工作流程，并设有硬检查点。
+![](/images/posts/agent-skill-design-patterns/e5950e37cb.png)
+该模式利用所有可选目录，仅在特定步骤拉入不同的参考文件和模板，保持上下文窗口的干净。
+```markdown
+# skills/doc-pipeline/SKILL.md
+---
+name: doc-pipeline
+description: Generates API documentation from Python source code through a multi-step pipeline. Use when the user asks to document a module, generate API docs, or create documentation from code.
+metadata:
+  pattern: pipeline
+  steps: "4"
+---
+
+You are running a documentation generation pipeline. Execute each step in order. Do NOT skip steps or proceed if a step fails.
+
+## Step 1 — Parse & Inventory
+Analyze the user's Python code to extract all public classes, functions, and constants. Present the inventory as a checklist. Ask: "Is this the complete public API you want documented?"
+
+## Step 2 — Generate Docstrings
+For each function lacking a docstring:
+- Load 'references/docstring-style.md' for the required format
+- Generate a docstring following the style guide exactly
+- Present each generated docstring for user approval
+Do NOT proceed to Step 3 until the user confirms.
+
+## Step 3 — Assemble Documentation
+Load 'assets/api-doc-template.md' for the output structure. Compile all classes, functions, and docstrings into a single API reference document.
+
+## Step 4 — Quality Check
+Review against 'references/quality-checklist.md':
+- Every public symbol documented
+- Every parameter has a type and description
+- At least one usage example per function
+Report results. Fix issues before presenting the final document.
+```
+# Choosing the right agent skill pattern
+以上五种 `skill` 模式适应不同的场景，使用以下决策树来找到适合你的方案：
+![](/images/posts/agent-skill-design-patterns/50f3fc67b8.png)

@@ -1,0 +1,82 @@
+---
+title: 关于我（仍在完善）
+description: AIGC 算法与 Agent 全栈开发工程师，个人简介、技术栈、项目与联系方式。
+---
+
+## 你好，我是 harry
+
+AIGC 算法工程师，目前从事 AI 全栈开发工作，追踪前沿技术发展，AI时代，你我大有所为。
+
+<CardGroup cols={2}>
+  <Card title="博客" icon="pen-line" href="/posts/2026-09/jev">
+    技术笔记与思考
+  </Card>
+  <Card title="GitHub" icon="github" href="https://github.com/kongds1999">
+    开源项目与代码
+  </Card>
+</CardGroup>
+
+## 我在做什么
+
+- 带领小团队开发 AI 漫剧生成平台，覆盖从剧本到视频输出的全流程
+- 从零构建平台内置 Agent Harness：工具调用、Skill、上下文与会话管理、MCP、Sandbox
+- 持续跟进 AIGC 与 Agent 工程方向的前沿技术，并通过开源项目和博客沉淀
+
+## 技术栈
+
+| 领域 | 技能 |
+| ---- | ---- |
+| AIGC 与算法 | SD / Flux / Kolors 模型训练微调，ComfyUI 工作流与节点开发，IP-Adapter / ControlNet / LoRA，图像风格化、虚拟试衣、角色一致性 |
+| Agent 工程 | Agent Harness、工具设计、MCP、上下文工程、会话管理、Prompt、Memory、Skill、CLI、缓存优化、SubAgent、Benchmark 评测 |
+| 后端 | Linux 服务端开发，Python / C++，FastAPI，Pydantic，Django，MySQL，Redis，Node.js，Docker |
+| 前端 | React，Vue，TypeScript，Next.js，Shadcn/UI，Tailwind CSS |
+| 工具 | Codex，Claude Code，Cursor，Herdr，PS，Linear，ORCA |
+
+## 项目
+
+<AccordionGroup>
+  <Accordion title="基于 Agents SDK 复现 Claude Code CLI">
+    逐步拆解 Claude Code 的实现思路，实现核心 Loop、工具调用/扩展/裁剪输出、上下文压缩、Skill 装载、子 Agent、Streaming、Plan 模式、Sandbox 以及中断恢复 Checkpoint 机制。
+
+    基于 Python + Click 构建 CLI，支持模型配置、Skill 指定、新建/会话重放、压缩上下文、Session 导出、会话内容复制等指令。
+
+    [项目地址](https://github.com/kongds1999/agent_from_scatch)
+  </Accordion>
+  <Accordion title="AI 画廊">
+    - 图像个性化生成：预置 30+ 个性化图像风格模型，提示词模板 + 微调模型，通过 ComfyUI API 统一部署。
+    - 工作台：数据集批量处理中控台，可选定风格批量生成不同场景、画面、主题的内容，支持一键配置、进度查询/终止/继续与任务管理。
+    - 技术栈：Next.js 16、React 19、TypeScript 5、Tailwind CSS、Shadcn/UI、Lucide React。
+
+    [项目地址](https://ai-gallery.kongds-dev.uk)
+  </Accordion>
+  <Accordion title="基于扩散修复模型的 2D 虚拟试衣（硕士阶段）">
+    基于归一化流的服装形变网络，改进特征注意力计算，结合多尺度特征与扩散修复模型实现服装迁移，保证服装纹理和褶皱平滑合理；再设计服装 Adapter 适配模块，将两阶段统一为端到端试衣。
+
+    国家自然科学基金项目，获国家级专利一项，ICCGV2025 国际会议论文一篇，中文核心期刊论文一篇。
+  </Accordion>
+</AccordionGroup>
+
+## 经历
+
+<Steps>
+  <Step title="2026.07 - 2026.10 · 杭州长角鹿网络科技有限公司 · Agent 全栈开发工程师">
+    - 业务侧：作为项目负责人，带三人实习生团队，基于 Vue / Django / Shadcn/UI 与 OpenAI Agents SDK，负责 AI 漫剧生成平台的前后端开发，覆盖导演团队权限管理、剧本处理、角色/场景/道具提取生成、分集/分镜提示词生成，以及图像视频制作、裁剪、审核、字幕擦除/生成等。
+    - Agent：从零构建平台内置 Agent Harness，包含工具调用、Skill 加载/版本管理、上下文与会话管理、MCP Server、Sandbox、上下文压缩、角色/项目记忆；搭建 LiteLLM 中转服务，为内部 AI 业务提供统一接口。
+  </Step>
+  <Step title="2025.03 - 2026.06 · 杭州汀灵智能科技有限公司 · AI 算法工程师">
+    - 模型训练：负责数据集构建、数据清洗到模型训练的全链路工作，包括风格化、上色、图像编辑等模型的训练微调与版本管理。
+    - 内部工具：定制 ComfyUI 节点与工作流，封装图像生成服务，构建统一图像生成平台，为企业内容部门提供技术支持。
+    - Agent 工程化：负责儿童学习机端侧 Agent loop 编排，包括意图分流、槽位提取等决策链路，以及记忆模块的工程化落地与调优。
+    - Benchmark：部署并运行记忆模块评测集，针对端侧硬件做性能调优。
+  </Step>
+  <Step title="2024.05 - 2025.03 · 北京爱话本科技有限公司 · AIGC 算法工程师（实习）">
+    - 算法优化：针对漫画生成中的角色一致性问题改进注意力控制方案，满足漫画自动化流程的图像生成需求。
+    - AI 写作平台：参与平台设计，独立负责 Agent 设计与交互逻辑，基于 Vue / FastAPI 迭代开发。
+    - AI Character：参与 AI 情感陪伴产品落地（与小说人物对话，累计对话过亿人次），负责人设提示词设计与对话流程编排。
+  </Step>
+</Steps>
+
+## 联系我
+
+- 邮箱：kongds1998@163.com
+- 网站：[kongds1999.github.io](https://kongds1999.github.io)

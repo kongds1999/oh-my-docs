@@ -1,0 +1,57 @@
+---
+title: "将指令拆分到不同文件中"
+description: "把庞大的指令拆分到多个文件中，让 agent 按需读取，减少注意力浪费。"
+date: 2026-05-17
+---
+
+一个可能忽视的问题：
+你建了个 `AGENTS.md`，把你能想到的所有规则、约束、历史教训都塞了进去，并继续累计…
+当累积的规则堆在同一个文件中，久而久之：
+- **上下文窗口缩减**
+- **写在中间的规则被忽略**
+- **优先级冲突 & 矛盾累积**
+	多个不同层级（最高优先级规则、总体设计范式、特定场景处理）的硬约束混杂，导致随机遵循。
+- 缺少改动维护：大文件中新增容易，删除后果不定所以导致只增不减，信噪比持续下降。
+## 拆分思路
+入口文件 `AGENTS.md` 控制在 50-200 行，只放最常用的东西：
+- **项目概览**（一两句话说清楚这是什么）
+- **首次运行命令**（`make setup && make test`）
+- **全局硬约束**（不超过 15 条不可违反的规则）
+- **指向专题文档的链接**（一行描述 + 适用条件）。
+```markdown
+# AGENTS.md
+
+## 项目概览
+Python 3.11 FastAPI 后端，PostgreSQL 15 数据库。
+
+## 快速开始
+- 安装：`make setup`
+- 测试：`make test`
+- 完整验证：`make check`
+
+## 硬约束
+- 所有 API 必须走 OAuth 2.0 认证
+- 所有数据库查询必须用 SQLAlchemy 2.0 语法
+- 所有 PR 必须通过 pytest + mypy --strict + ruff check
+
+## 专题文档
+- [API 设计规范](docs/api-patterns.md) — 添加新端点时必读
+- [数据库操作约束](docs/database-rules.md) — 涉及数据库修改时必读
+- [测试标准](docs/testing-standards.md) — 编写测试时参考
+```
+```markdown
+参考以下内容：
+1. https://walkinglabs.github.io/learn-harness-engineering/zh/lectures/lecture-03-why-the-repository-must-become-the-system-of-record/
+2. https://walkinglabs.github.io/learn-harness-engineering/zh/lectures/lecture-04-why-one-giant-instruction-file-fails/
+3. https://walkinglabs.github.io/learn-harness-engineering/zh/lectures/lecture-07-why-agents-overreach-and-under-finish/
+
+以及我关心的以下几个重点：
+1. 文档结构清晰
+2. AGENTS.md是给agent看的，需要符合渐进式披露原则，分级组织
+3. 必须能从AGENTS.md这张地图可以递归查到所有应该知道的规则或上下文，本次你需要探查当前代码库结构，并添加对应索引。
+4. 一些每次执行都要遵循的原则可以尽可能放在顶层
+5. agent需要在每次完成任务后自动询问开发者是否更新变动记录，并在正确的位置更新
+6. 需要一份 MEMORY.md 文档，用于在与开发者修改代码时主动记录适用于全局或特殊情况的经验/教训/启发等，需要与开发者确认
+
+根据这些原则和偏好重新构建当前的AGENTS.md文档，代码本次先不变，涉及文档内容修改、移动、以及新建你可以直接执行，中间不要停。完成之后告诉我你有什么别的建议
+```

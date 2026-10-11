@@ -797,60 +797,57 @@
         ]
       },
       {
-        "tab": "SEPs",
+        "tab": "Blogs",
         "pages": [
-          "seps/index",
           {
-            "group": "Final",
+            "group": "2026-09",
             "pages": [
-              "seps/414-request-meta",
-              "seps/932-model-context-protocol-governance",
-              "seps/973-expose-additional-metadata-for-implementations-res",
-              "seps/985-align-oauth-20-protected-resource-metadata-with-rf",
-              "seps/986-specify-format-for-tool-names",
-              "seps/990-enable-enterprise-idp-policy-controls-during-mcp-o",
-              "seps/991-enable-url-based-client-registration-using-oauth-c",
-              "seps/994-shared-communication-practicesguidelines",
-              "seps/1024-mcp-client-security-requirements-for-local-server-",
-              "seps/1034--support-default-values-for-all-primitive-types-in",
-              "seps/1036-url-mode-elicitation-for-secure-out-of-band-intera",
-              "seps/1046-support-oauth-client-credentials-flow-in-authoriza",
-              "seps/1302-formalize-working-groups-and-interest-groups-in-mc",
-              "seps/1303-input-validation-errors-as-tool-execution-errors",
-              "seps/1319-decouple-request-payload-from-rpc-methods-definiti",
-              "seps/1330-elicitation-enum-schema-improvements-and-standards",
-              "seps/1577--sampling-with-tools",
-              "seps/1613-establish-json-schema-2020-12-as-default-dialect-f",
-              "seps/1686-tasks",
-              "seps/1699-support-sse-polling-via-server-side-disconnect",
-              "seps/1730-sdks-tiering-system",
-              "seps/1850-pr-based-sep-workflow",
-              "seps/1865-mcp-apps-interactive-user-interfaces-for-mcp",
-              "seps/2085-governance-succession-and-amendment",
-              "seps/2106-json-schema-2020-12",
-              "seps/2133-extensions",
-              "seps/2148-contributor-ladder",
-              "seps/2149-working-group-charter-template",
-              "seps/2164-resource-not-found-error",
-              "seps/2207-oidc-refresh-token-guidance",
-              "seps/2243-http-standardization",
-              "seps/2260-Require-Server-requests-to-be-associated-with-Client-requests",
-              "seps/2322-MRTR",
-              "seps/2468-recommend-issuer-claim-for-auth",
-              "seps/2484-conformance-tests-required-for-final-seps",
-              "seps/2549-TTL-for-list-results",
-              "seps/2567-sessionless-mcp",
-              "seps/2575-stateless-mcp",
-              "seps/2577-deprecate-roots-sampling-and-logging",
-              "seps/2596-spec-feature-lifecycle-and-deprecation",
-              "seps/2663-tasks-extension"
+              "posts/2026-09/jev"
+            ]
+          },
+          {
+            "group": "2026-05",
+            "pages": [
+              "posts/2026-05/building-effective-agents"
+            ]
+          },
+          {
+            "group": "2026-03",
+            "pages": [
+              "posts/2026-03/agent-skill-design-patterns"
+            ]
+          },
+          {
+            "group": "Learn Harness Engineering",
+            "pages": [
+              "posts/learn-harness-engineering/index",
+              "posts/learn-harness-engineering/capable-not-reliable",
+              "posts/learn-harness-engineering/harness-definition",
+              "posts/learn-harness-engineering/repo-as-source-of-truth",
+              "posts/learn-harness-engineering/split-instructions",
+              "posts/learn-harness-engineering/cross-session-continuity",
+              "posts/learn-harness-engineering/initialize-before-work",
+              "posts/learn-harness-engineering/task-boundaries"
             ]
           }
         ]
       },
       {
-        "tab": "Community",
+        "tab": "About me",
         "pages": [
+          "about/index",
+          {
+            "group": "朋友圈",
+            "pages": [
+              "about/moments/index"
+            ]
+          },
+          {
+            "group": "杂记进化论",
+            "pages": [
+              "about/notes/index"
+            ]
+          },
           {
             "group": "Get Involved",
             "pages": [
@@ -919,11 +916,6 @@
       "og:image": "https://raw.githubusercontent.com/modelcontextprotocol/docs/2eb6171ddbfeefde349dc3b8d5e2b87414c26250/images/og-image.png"
     },
     "indexing": "navigable"
-  },
-  "footer": {
-    "socials": {
-      "github": "https://github.com/modelcontextprotocol"
-    }
   },
   "redirects": [
     {
