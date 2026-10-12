@@ -406,3 +406,62 @@ body:has(#schema-reference) {
   color: rgb(var(--gray-500));
   line-height: 1.5;
 }
+
+
+
+/*** Navbar (desktop): tabs on the left, search next to GitHub, logo icon on the far right ***/
+
+@media (min-width: 1024px) {
+  /* Tabs no longer have their own row, so the sidebar offset drops the tab height */
+  :root {
+    --topbar-tabs-height: 0rem !important;
+  }
+
+  /* One flex row: [tabs] ........ [search] [GitHub / theme] [logo] */
+  #navbar > .max-w-8xl > div {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    height: 4rem;
+    min-width: 0;
+    padding: 0 3rem;
+
+    /* Flatten Mintlify's wrappers so their children become items of this row */
+    > .relative,
+    > .relative > div,
+    > .relative > div > div {
+      display: contents;
+    }
+
+    /* Logo: icon only, far right after the GitHub link / theme toggle */
+    > .relative > div > div > div:first-child {
+      order: 4;
+      flex: none;
+    }
+
+    /* Tabs: Documentation is the leftmost item */
+    > div:not(.relative) {
+      order: 1;
+      flex: 0 1 auto;
+      min-width: 0;
+      height: 100%;
+      padding: 0;
+    }
+
+    /* Search: takes the free space, right-aligned against the GitHub link */
+    > .relative > div > div > div:has(> #search-bar-entry) {
+      order: 2;
+      flex: 1 1 0;
+      min-width: 0;
+      max-width: 22rem;
+      margin-left: auto;
+    }
+
+    /* GitHub link + theme toggle */
+    > .relative > div > div > div:has(> nav[aria-label="Main"]) {
+      order: 3;
+      flex: none;
+      margin-left: 0;
+    }
+  }
+}

@@ -1,6 +1,6 @@
 // Custom footer copyright notice, aligned with "Powered by Mintlify"
 (function() {
-  var TEXT = 'Copyright \u00a9 2025 harry. All rights reserved. Personal site and documentation. Content is for learning and reference purposes only.';
+  var TEXT = 'Copyright \u00a9 2026 harry. All rights reserved. Personal site and documentation. Content is for learning and reference purposes only.';
 
   function addCopyright() {
     var footer = document.querySelector('footer');
