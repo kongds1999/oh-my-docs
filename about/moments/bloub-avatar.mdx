@@ -1,0 +1,120 @@
+---
+title: "bloub"
+sidebarTitle: "2026-11-01"
+description: 记录最近 fork 并部署的一个好玩小项目 —— 纯 SVG 逐帧还原的 x.ai (Grok) 拟态 Avatar。
+---
+
+刷推和逛开源社区时，经常能看到 x.ai (Grok) 那个辨识度极高、软萌又灵动的黑色液态小团子。
+
+最近偶然发现了开源开发者 [jeremy-prt](https://github.com/jeremy-prt) 打造的项目 **bloub** —— 他用纯 SVG 结合数学插值，逐帧还原了视频中这个黑团子的 14 种表情状态与过渡动画。整个项目**完全不依赖任何第三方重量级动效库**（没有 GSAP、没有 Lottie），却做到了丝滑流畅的变形拟态与情绪交互。
+
+觉得实在太好玩，便随手 **Fork 并部署** 了一份属于自己的在线游玩站：
+
+<CardGroup cols={2}>
+  <Card title="我的部署站（在线体验）" icon="sparkles" href="https://bloub.kongds-dev.uk/">
+    https://bloub.kongds-dev.uk/
+  </Card>
+  <Card title="GitHub 原开源仓库" icon="github" href="https://github.com/jeremy-prt/bloub">
+    jeremy-prt / bloub (Vue 3 + Vite + Tailwind)
+  </Card>
+</CardGroup>
+
+> [!NOTE]
+> **关于部署与致谢**：本项目核心源码与视觉设计来自开源作者 [jeremy-prt/bloub](https://github.com/jeremy-prt/bloub)，我将其 Fork 之后部署在个人的二级域名下，方便自己随时把玩、学习其动效实现与当做灵感参考。原作者的逐帧还原与轻量化实现思路非常精彩。
+
+---
+
+## 迷你动效预览
+
+下面是提取其核心特征做的一个纯 SVG 轻量呼吸动画（在暗色/亮色模式下会自动适配反色）：
+
+<div className="flex flex-col items-center justify-center p-8 my-6 rounded-2xl bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900/60 dark:to-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-sm text-center">
+  <svg viewBox="-108 -108 216 216" className="w-24 h-24 transition-transform duration-300 hover:scale-110 cursor-pointer drop-shadow-md">
+    <defs>
+      <mask id="yeux-preview">
+        <circle r="100" fill="#ffffff" />
+        <path
+          d="M-9.3 -11.3A9.3 9.3 0 0 1 0 -20.6L0 -20.6A9.3 9.3 0 0 1 9.3 -11.3L9.3 11.3A9.3 9.3 0 0 1 0 20.6L0 20.6A9.3 9.3 0 0 1 -9.3 11.3Z"
+          transform="matrix(0.87,-0.33,0.45,0.84,21.42,-43.32)"
+          fill="#000000"
+        />
+        <path
+          d="M-9.3 -11.3A9.3 9.3 0 0 1 0 -20.6L0 -20.6A9.3 9.3 0 0 1 9.3 -11.3L9.3 11.3A9.3 9.3 0 0 1 0 20.6L0 20.6A9.3 9.3 0 0 1 -9.3 11.3Z"
+          transform="matrix(0.64,-0.06,0.45,0.84,62.98,-53.9)"
+          fill="#000000"
+        />
+      </mask>
+    </defs>
+    <circle r="100" fill="currentColor" className="text-zinc-900 dark:text-zinc-100" mask="url(#yeux-preview)">
+      <animateTransform
+        attributeName="transform"
+        type="translate"
+        values="0 0; 0 -5; 0 0"
+        dur="2.8s"
+        repeatCount="indefinite"
+      />
+    </circle>
+  </svg>
+  <span className="mt-3 text-xs font-mono text-zinc-500 dark:text-zinc-400">
+    ▲ 纯 SVG 切割与微动效（双眼为透明挖孔）
+  </span>
+</div>
+
+---
+
+## 为什么觉得这个项目很有意思？
+
+<AccordionGroup>
+  <Accordion title="1. 纯手工像素级拟合，零外部动效库依赖" defaultOpen>
+    很多动态 Avatar 会依赖 Lottie、Canvas 或庞大的三方动画库，而 bloub 完全用原生的 SVG 路径与切分算法完成。
+    作者对照官方视频逐帧测量特征点的坐标、曲率与球体切平面投影角度，使得两个眼神切孔具有真实的“三维球面透视感”（右眼比左眼略微压缩）。
+  </Accordion>
+
+  <Accordion title="2. 完整的 14 种情绪状态与时间轴编排" defaultOpen>
+    不仅仅是一个静态图标，它实现了一整套状态机：从 `idle`（发呆呼吸）、`blink`（眨眼）、`happy`（开心微笑）到 `confused`（疑惑打量）。
+    页面内置了时间轴编排器，可以把多个状态拼接成一组连续叙事动画，甚至微调帧速率与弹性曲线。
+  </Accordion>
+
+  <Accordion title="3. 便捷的多格式导出" defaultOpen>
+    调好心仪的动作循环后，可以直接在界面中导出为 **SVG 代码**、**PNG 序列**、**GIF 动图** 甚至 **MP4 视频**。拿来当个人主页的动态徽章或博客挂件非常合适。
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## 完整界面试玩
+
+你可以在下方直接体验完整的在线编辑器，或者直接访问 [bloub.kongds-dev.uk](https://bloub.kongds-dev.uk/)：
+
+<div className="w-full my-6 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
+  <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-100 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500">
+    <div className="flex items-center gap-2">
+      <span className="w-3 h-3 rounded-full bg-red-400/80 inline-block" />
+      <span className="w-3 h-3 rounded-full bg-amber-400/80 inline-block" />
+      <span className="w-3 h-3 rounded-full bg-emerald-400/80 inline-block" />
+      <span className="ml-2 font-mono text-zinc-600 dark:text-zinc-300">bloub.kongds-dev.uk</span>
+    </div>
+    <a
+      href="https://bloub.kongds-dev.uk/"
+      target="_blank"
+      rel="noreferrer"
+      className="text-blue-500 hover:text-blue-600 dark:text-blue-400 font-medium no-underline hover:underline"
+    >
+      新窗口全屏打开 ↗
+    </a>
+  </div>
+  <iframe
+    src="https://bloub.kongds-dev.uk/"
+    className="w-full h-[520px] border-0 bg-white dark:bg-zinc-950"
+    title="bloub interactive preview"
+    loading="lazy"
+  />
+</div>
+
+---
+
+## 随想
+
+前端交互很多时候并不需要一味堆叠复杂的 3D 渲染管线，简单的几何图形加上细腻的缓动曲线、投影视角与状态切分，就能营造出极强的情绪感染力和生命力。
+
+下次有空，也打算尝试把它集成到自己的 Agent 交互界面或者 CLI 状态提示里，当 Agent 在思考、工具调用或输出回答时，给它配上不同的小表情～

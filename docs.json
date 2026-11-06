@@ -275,7 +275,8 @@
           {
             "group": "朋友圈",
             "pages": [
-              "about/moments/index"
+              "about/moments/index",
+              "about/moments/bloub-avatar"
             ]
           },
           {
