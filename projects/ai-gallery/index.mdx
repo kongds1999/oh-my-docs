@@ -1,0 +1,42 @@
+---
+title: "AI 画廊 & 批量工作台"
+sidebarTitle: "项目概览"
+description: "预置 30+ 图像风格微调模型，基于 ComfyUI API 统一部署的数据集批量生成与管理中控台。"
+---
+
+## 项目概述
+
+**AI 画廊 & 批量工作台**（AI Gallery & Studio）是我独立设计并全栈落地的综合性 AIGC 工具平台。
+
+项目旨在解决个人与团队在模型训练、风格探索过程中的两大核心痛点：一是优质图像风格资产难以直观沉淀与检索；二是批量制作特定风格数据集时缺乏便捷的任务中控管理工具。
+
+<CardGroup cols={2}>
+  <Card title="在线访问平台" icon="earth-asia" href="https://ai-gallery.kongds-dev.uk">
+    体验线上运行的 AI 画廊：ai-gallery.kongds-dev.uk
+  </Card>
+  <Card title="个人主页与项目说明" icon="user" href="/about">
+    了解作者背景与完整技术栈概况
+  </Card>
+</CardGroup>
+
+---
+
+## 核心功能矩阵
+
+- **风格化画廊**：收录 30+ 种个性化视觉风格（赛博朋克、水墨写意、极简扁平、粘土拟态等），集成模型参数与提示词推荐。
+- **批量中控台**：支持构建提示词矩阵（Prompt Matrix），一键分发数百张图像的生成流水线。
+- **任务状态流转**：实时监控 GPU 显存负载、生成队列进度，支持随时一键暂停、终止或断点继续。
+- **资产沉淀中心**：生成的图像资产自动打标、归类，支持批量过滤、打包下载与模型数据集导出。
+
+---
+
+## 模块导读
+
+<CardGroup cols={2}>
+  <Card title="ComfyUI API 统一部署与中控" icon="server" href="/projects/ai-gallery/comfyui-api">
+    详解 ComfyUI 工作流封装、WebSocket 状态通信与异步队列。
+  </Card>
+  <Card title="数据集批量生成与工作台" icon="table-cells" href="/projects/ai-gallery/batch-workflow">
+    探讨提示词矩阵化组合、批量流转调度与数据标注。
+  </Card>
+</CardGroup>

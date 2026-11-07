@@ -22,14 +22,13 @@
         "tab": "Documentation",
         "pages": [
           {
-            "group": "OpenAI agents SDK",
+            "group": "OpenAI Agents SDK",
             "pages": [
               "docs/openai-agents/index",
               "docs/openai-agents/01_agent_loop",
               "docs/openai-agents/03_todo_write",
               "docs/openai-agents/04_subagent",
               "docs/openai-agents/05_skill_loading"
-              
             ]
           },
           {
@@ -37,222 +36,66 @@
             "pages": [
               "docs/openai-agents/developer/checkpoint",
               "docs/openai-agents/developer/mcp_server",
-              "docs/openai-agents/developer/completions_and_responses",
               "docs/openai-agents/developer/sessions"
             ]
-          },
+          }
+        ]
+      },
+      {
+        "tab": "Projects",
+        "pages": [
+          "projects/index",
           {
-            "group": "Get started",
+            "group": "Claude Code CLI 复现",
             "pages": [
-              "docs/getting-started/intro"
+              "projects/claude-code-cli/index",
+              "projects/claude-code-cli/architecture",
+              "projects/claude-code-cli/features"
             ]
           },
           {
-            "group": "About MCP",
+            "group": "AI 漫剧生成平台",
             "pages": [
-              "docs/learn/architecture",
-              "docs/learn/server-concepts",
-              "docs/learn/client-concepts",
-              "docs/learn/versioning"
+              "projects/ai-comic/index",
+              "projects/ai-comic/harness",
+              "projects/ai-comic/pipeline"
             ]
           },
           {
-            "group": "Develop with MCP",
+            "group": "Bloub Avatar 拟态小团子",
             "pages": [
-              "docs/develop/connect-local-servers",
-              "docs/develop/connect-remote-servers",
-              "docs/develop/build-with-agent-skills",
-              "docs/develop/build-server",
-              {
-                "group": "Clients",
-                "pages": [
-                  "docs/develop/build-client",
-                  "docs/develop/clients/client-best-practices"
-                ]
-              },
-              "docs/sdk",
-              {
-                "group": "Security",
-                "pages": [
-                  "docs/tutorials/security/authorization",
-                  "docs/tutorials/security/security_best_practices"
-                ]
-              }
+              "projects/bloub-avatar/index",
+              "projects/bloub-avatar/svg-interpolation",
+              "projects/bloub-avatar/export"
             ]
           },
           {
-            "group": "Developer tools",
+            "group": "AI 画廊 & 工作台",
             "pages": [
-              {
-                "group": "Inspector",
-                "pages": [
-                  "docs/tools/inspector",
-                  "docs/tools/inspector/web",
-                  "docs/tools/inspector/cli",
-                  "docs/tools/inspector/tui",
-                  "docs/tools/inspector/configuration",
-                  "docs/tools/inspector/authorization",
-                  "docs/tools/inspector/protocol-eras",
-                  "docs/tools/inspector/recipes"
-                ]
-              },
-              "docs/tools/debugging"
+              "projects/ai-gallery/index",
+              "projects/ai-gallery/comfyui-api",
+              "projects/ai-gallery/batch-workflow"
             ]
           },
           {
-            "group": "Examples",
+            "group": "2D 虚拟试衣算法研究",
             "pages": [
-              "examples"
+              "projects/virtual-try-on/index",
+              "projects/virtual-try-on/normalizing-flow",
+              "projects/virtual-try-on/diffusion-adapter"
+            ]
+          },
+          {
+            "group": "Orca Git Graph",
+            "pages": [
+              "projects/orca-git-graph/index"
             ]
           }
         ]
       },
       {
-        "tab": "Specification",
+        "tab": "Blog",
         "pages": [
-          "specification/index",
-          "specification/changelog",
-          "specification/deprecated",
-          "specification/architecture/index",
-          {
-            "group": "Base Protocol",
-            "pages": [
-              "specification/basic/index",
-              "specification/basic/versioning",
-              {
-                "group": "Message Patterns",
-                "pages": [
-                  "specification/basic/patterns/index",
-                  "specification/basic/patterns/mrtr",
-                  "specification/basic/patterns/subscriptions",
-                  "specification/basic/patterns/cancellation",
-                  "specification/basic/patterns/progress"
-                ]
-              },
-              {
-                "group": "Transports",
-                "pages": [
-                  "specification/basic/transports/index",
-                  "specification/basic/transports/stdio",
-                  "specification/basic/transports/streamable-http"
-                ]
-              },
-              {
-                "group": "Authorization",
-                "pages": [
-                  "specification/basic/authorization/index",
-                  "specification/basic/authorization/authorization-server-discovery",
-                  "specification/basic/authorization/client-registration",
-                  "specification/basic/authorization/security-considerations"
-                ]
-              }
-            ]
-          },
-          {
-            "group": "Client Features",
-            "pages": [
-              "specification/client/roots",
-              "specification/client/sampling",
-              "specification/client/elicitation"
-            ]
-          },
-          {
-            "group": "Server Features",
-            "pages": [
-              "specification/server/index",
-              "specification/server/discover",
-              "specification/server/prompts",
-              "specification/server/resources",
-              "specification/server/tools",
-              {
-                "group": "Utilities",
-                "pages": [
-                  "specification/server/utilities/caching",
-                  "specification/server/utilities/completion",
-                  "specification/server/utilities/logging",
-                  "specification/server/utilities/pagination"
-                ]
-              }
-            ]
-          },
-          "specification/schema"
-        ]
-      },
-      {
-        "tab": "Extensions",
-        "pages": [
-          "extensions/overview",
-          "extensions/client-matrix",
-          {
-            "group": "MCP Apps",
-            "pages": [
-              "extensions/apps/overview",
-              "extensions/apps/build"
-            ]
-          },
-          {
-            "group": "Authorization Extensions",
-            "pages": [
-              "extensions/auth/overview",
-              "extensions/auth/oauth-client-credentials",
-              "extensions/auth/enterprise-managed-authorization"
-            ]
-          },
-          {
-            "group": "Tasks",
-            "pages": [
-              "extensions/tasks/overview"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Registry",
-        "pages": [
-          "registry/about",
-          "registry/quickstart",
-          "registry/faq",
-          {
-            "group": "Publishing",
-            "pages": [
-              "registry/package-types",
-              "registry/remote-servers",
-              "registry/authentication",
-              "registry/versioning",
-              "registry/github-actions",
-              "registry/moderation-policy"
-            ]
-          },
-          {
-            "group": "Consuming",
-            "pages": [
-              "registry/registry-aggregators"
-            ]
-          },
-          "registry/terms-of-service"
-        ]
-      },
-      {
-        "tab": "Blogs",
-        "pages": [
-          {
-            "group": "2026-09",
-            "pages": [
-              "posts/2026-09/jev"
-            ]
-          },
-          {
-            "group": "2026-05",
-            "pages": [
-              "posts/2026-05/building-effective-agents"
-            ]
-          },
-          {
-            "group": "2026-03",
-            "pages": [
-              "posts/2026-03/agent-skill-design-patterns"
-            ]
-          },
           {
             "group": "Learn Harness Engineering",
             "pages": [
@@ -265,81 +108,40 @@
               "posts/learn-harness-engineering/initialize-before-work",
               "posts/learn-harness-engineering/task-boundaries"
             ]
+          },
+          {
+            "group": "Articles",
+            "pages": [
+              "posts/2026-11/orca-git-graph",
+              "posts/2026-09/jev",
+              "posts/2026-05/building-effective-agents",
+              "posts/2026-03/agent-skill-design-patterns"
+            ]
           }
         ]
       },
       {
-        "tab": "About me",
+        "tab": "Moments",
         "pages": [
-          "about/index",
           {
             "group": "朋友圈",
             "pages": [
-              "about/moments/index",
-              "about/moments/bloub-avatar"
+              "moments/orca-git-graph",
+              "moments/bloub-avatar"
             ]
           },
           {
             "group": "杂记进化论",
             "pages": [
-              "about/notes/index"
-            ]
-          },
-          {
-            "group": "Get Involved",
-            "pages": [
-              "community/contributing",
-              "community/communication",
-              "community/working-interest-groups",
-              "community/charter-template"
-            ]
-          },
-          {
-            "group": "Shaping the Protocol",
-            "pages": [
-              "development/roadmap",
-              "community/design-principles",
-              "community/sep-guidelines"
-            ]
-          },
-          {
-            "group": "Governance",
-            "pages": [
-              "community/governance",
-              "community/contributor-ladder",
-              "community/feature-lifecycle",
-              "community/sdk-tiers",
-              "community/security",
-              "community/antitrust"
-            ]
-          },
-          {
-            "group": "Working Group Charters",
-            "pages": [
-              "community/working-groups/agents",
-              "community/working-groups/file-uploads",
-              "community/working-groups/inspector-v2",
-              "community/working-groups/interceptors",
-              "community/working-groups/registry",
-              "community/working-groups/sdk",
-              "community/working-groups/server-card",
-              "community/working-groups/skills-over-mcp",
-              "community/working-groups/transports",
-              "community/working-groups/triggers-events"
-            ]
-          },
-          {
-            "group": "Interest Group Charters",
-            "pages": [
-              "community/interest-groups/auth",
-              "community/interest-groups/enterprise",
-              "community/interest-groups/enterprise-managed-authorization",
-              "community/interest-groups/financial-services",
-              "community/interest-groups/primitive-grouping",
-              "community/interest-groups/security",
-              "community/interest-groups/tool-annotations"
+              "moments/notes/index"
             ]
           }
+        ]
+      },
+      {
+        "tab": "About",
+        "pages": [
+          "about/index"
         ]
       }
     ]
@@ -351,324 +153,11 @@
   },
   "seo": {
     "metatags": {
-      "og:image": "https://raw.githubusercontent.com/modelcontextprotocol/docs/2eb6171ddbfeefde349dc3b8d5e2b87414c26250/images/og-image.png"
+      "og:image": "/logo/logo.png"
     },
     "indexing": "navigable"
   },
-  "redirects": [
-    {
-      "source": "/clients",
-      "destination": "/docs/getting-started/intro"
-    },
-    {
-      "source": "/community/auth/charter",
-      "destination": "/community/interest-groups/auth"
-    },
-    {
-      "source": "/community/tool-annotations/charter",
-      "destination": "/community/interest-groups/tool-annotations"
-    },
-    {
-      "source": "/community/agents/charter",
-      "destination": "/community/working-groups/agents"
-    },
-    {
-      "source": "/community/file-uploads/charter",
-      "destination": "/community/working-groups/file-uploads"
-    },
-    {
-      "source": "/community/inspector-v2/charter",
-      "destination": "/community/working-groups/inspector-v2"
-    },
-    {
-      "source": "/community/interceptors/charter",
-      "destination": "/community/working-groups/interceptors"
-    },
-    {
-      "source": "/community/registry/charter",
-      "destination": "/community/working-groups/registry"
-    },
-    {
-      "source": "/community/sdk/charter",
-      "destination": "/community/working-groups/sdk"
-    },
-    {
-      "source": "/community/server-card/charter",
-      "destination": "/community/working-groups/server-card"
-    },
-    {
-      "source": "/community/skills-over-mcp/charter",
-      "destination": "/community/working-groups/skills-over-mcp"
-    },
-    {
-      "source": "/community/transports/charter",
-      "destination": "/community/working-groups/transports"
-    },
-    {
-      "source": "/community/triggers-events/charter",
-      "destination": "/community/working-groups/triggers-events"
-    },
-    {
-      "source": "/specification/draft/basic/lifecycle",
-      "destination": "/specification/basic/versioning"
-    },
-    {
-      "source": "/specification/draft/basic/utilities/ping",
-      "destination": "/specification/changelog"
-    },
-    {
-      "source": "/specification/draft/basic/utilities/cancellation",
-      "destination": "/specification/basic/patterns/cancellation"
-    },
-    {
-      "source": "/specification/draft/basic/utilities/progress",
-      "destination": "/specification/basic/patterns/progress"
-    },
-    {
-      "source": "/specification/draft/basic/utilities/tasks",
-      "destination": "/extensions/tasks/overview"
-    },
-    {
-      "source": "/specification/2026-07-28/basic/lifecycle",
-      "destination": "/specification/basic/versioning"
-    },
-    {
-      "source": "/specification/2026-07-28/basic/utilities/ping",
-      "destination": "/specification/changelog"
-    },
-    {
-      "source": "/specification/2026-07-28/basic/utilities/cancellation",
-      "destination": "/specification/basic/patterns/cancellation"
-    },
-    {
-      "source": "/specification/2026-07-28/basic/utilities/progress",
-      "destination": "/specification/basic/patterns/progress"
-    },
-    {
-      "source": "/specification/2026-07-28/basic/utilities/tasks",
-      "destination": "/extensions/tasks/overview"
-    },
-    {
-      "source": "/specification/versioning",
-      "destination": "/docs/learn/versioning"
-    },
-    {
-      "source": "/specification/latest",
-      "destination": "/specification",
-      "permanent": false
-    },
-    {
-      "source": "/specification/latest/:slug*",
-      "destination": "/specification/:slug*",
-      "permanent": false
-    },
-    {
-      "source": "/tutorials/building-a-client",
-      "destination": "/docs/develop/build-client"
-    },
-    {
-      "source": "/tutorials/building-a-client-node",
-      "destination": "/docs/develop/build-client"
-    },
-    {
-      "source": "/tutorials/building-mcp-with-llms",
-      "destination": "/docs/develop/build-with-agent-skills"
-    },
-    {
-      "source": "/faqs",
-      "destination": "/docs/getting-started/intro"
-    },
-    {
-      "source": "/docs/tutorials/use-local-mcp-server",
-      "destination": "/docs/develop/connect-local-servers"
-    },
-    {
-      "source": "/quickstart",
-      "destination": "/docs/develop/build-server"
-    },
-    {
-      "source": "/docs/concepts/architecture",
-      "destination": "/docs/learn/architecture"
-    },
-    {
-      "source": "/docs/concepts/elicitation",
-      "destination": "/specification/client/elicitation"
-    },
-    {
-      "source": "/docs/concepts/prompts",
-      "destination": "/specification/server/prompts"
-    },
-    {
-      "source": "/docs/concepts/resources",
-      "destination": "/specification/server/resources"
-    },
-    {
-      "source": "/docs/concepts/roots",
-      "destination": "/specification/client/roots"
-    },
-    {
-      "source": "/docs/concepts/sampling",
-      "destination": "/specification/client/sampling"
-    },
-    {
-      "source": "/docs/concepts/tools",
-      "destination": "/specification/server/tools"
-    },
-    {
-      "source": "/docs/concepts/transports",
-      "destination": "/specification/basic/transports"
-    },
-    {
-      "source": "/legacy/tools/debugging",
-      "destination": "/docs/tools/debugging"
-    },
-    {
-      "source": "/legacy/concepts/architecture",
-      "destination": "/specification/architecture"
-    },
-    {
-      "source": "/legacy/concepts/elicitation",
-      "destination": "/specification/client/elicitation"
-    },
-    {
-      "source": "/legacy/concepts/prompts",
-      "destination": "/specification/server/prompts"
-    },
-    {
-      "source": "/legacy/concepts/resources",
-      "destination": "/specification/server/resources"
-    },
-    {
-      "source": "/legacy/concepts/roots",
-      "destination": "/specification/client/roots"
-    },
-    {
-      "source": "/legacy/concepts/sampling",
-      "destination": "/specification/client/sampling"
-    },
-    {
-      "source": "/legacy/concepts/tools",
-      "destination": "/specification/server/tools"
-    },
-    {
-      "source": "/legacy/concepts/transports",
-      "destination": "/specification/basic/transports"
-    },
-    {
-      "source": "/legacy/tools/inspector",
-      "destination": "/docs/tools/inspector"
-    },
-    {
-      "source": "/introduction",
-      "destination": "/docs/getting-started/intro"
-    },
-    {
-      "source": "/docs/concepts",
-      "destination": "/docs/learn/architecture"
-    },
-    {
-      "source": "/docs/tutorials/use-remote-mcp-server",
-      "destination": "/docs/develop/connect-remote-servers"
-    },
-    {
-      "source": "/quickstart/user",
-      "destination": "/docs/develop/connect-local-servers"
-    },
-    {
-      "source": "/quickstart/server",
-      "destination": "/docs/develop/build-server"
-    },
-    {
-      "source": "/quickstart/client",
-      "destination": "/docs/develop/build-client"
-    },
-    {
-      "source": "/development/contributing",
-      "destination": "/community/contributing"
-    },
-    {
-      "source": "/specification/draft/basic/security_best_practices",
-      "destination": "/docs/tutorials/security/security_best_practices"
-    },
-    {
-      "source": "/specification/2025-11-25/basic/security_best_practices",
-      "destination": "/docs/tutorials/security/security_best_practices"
-    },
-    {
-      "source": "/specification/2025-06-18/basic/security_best_practices",
-      "destination": "/docs/tutorials/security/security_best_practices"
-    },
-    {
-      "source": "/extensions",
-      "destination": "/extensions/overview"
-    },
-    {
-      "source": "/docs/extensions/overview",
-      "destination": "/extensions/overview"
-    },
-    {
-      "source": "/docs/extensions/apps",
-      "destination": "/extensions/apps/overview"
-    },
-    {
-      "source": "/docs/extensions/tasks",
-      "destination": "/extensions/tasks/overview"
-    },
-    {
-      "source": "/community/seps",
-      "destination": "/seps"
-    },
-    {
-      "source": "/community/seps/:slug*",
-      "destination": "/seps/:slug*"
-    },
-    {
-      "source": "/docs/latest",
-      "destination": "/docs/getting-started/intro",
-      "permanent": false
-    },
-    {
-      "source": "/docs/latest/:slug*",
-      "destination": "/docs/:slug*",
-      "permanent": false
-    },
-    {
-      "source": "/specification/2026-07-28/basic/security_best_practices",
-      "destination": "/docs/tutorials/security/security_best_practices"
-    },
-    {
-      "source": "/docs/2026-07-28",
-      "destination": "/docs/getting-started/intro"
-    },
-    {
-      "source": "/docs/2026-07-28/:slug*",
-      "destination": "/docs/:slug*"
-    },
-    {
-      "source": "/docs/draft",
-      "destination": "/docs/getting-started/intro"
-    },
-    {
-      "source": "/docs/draft/:slug*",
-      "destination": "/docs/:slug*"
-    },
-    {
-      "source": "/specification/2026-07-28",
-      "destination": "/specification"
-    },
-    {
-      "source": "/specification/2026-07-28/:slug*",
-      "destination": "/specification/:slug*"
-    },
-    {
-      "source": "/specification/draft",
-      "destination": "/specification"
-    },
-    {
-      "source": "/specification/draft/:slug*",
-      "destination": "/specification/:slug*"
-    }
-  ],
+  "redirects": [],
   "contextual": {
     "options": [
       "copy",

@@ -17,9 +17,15 @@ function walk(value) {
   Object.values(value).forEach(walk);
 }
 walk(config.navigation);
-for (const tab of ['Documentation', 'Specification']) {
+const expectedTabs = ['Documentation', 'Projects', 'Blog', 'Moments', 'About'];
+for (const tab of expectedTabs) {
   assert(config.navigation.tabs.some((entry) => entry.tab === tab), `Missing tab: ${tab}`);
 }
+assert.deepEqual(
+  config.navigation.tabs.map((entry) => entry.tab),
+  expectedTabs,
+  `Tab order should be ${expectedTabs.join(', ')}`
+);
 for (const redirect of config.redirects || []) {
   if (redirect.source === redirect.destination) errors.push(`Self redirect: ${redirect.source}`);
   if (redirect.destination.startsWith('/') && !redirect.destination.includes(':') && !exists(redirect.destination)) {

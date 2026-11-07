@@ -1,0 +1,29 @@
+---
+title: "AI 漫剧生成平台"
+sidebarTitle: "项目概览"
+description: "端到端工业化 AI 漫剧制作平台，覆盖文学剧本结构化解析、分集分镜、多模态资产生成到视频合成全流程。"
+---
+
+## 项目概述
+
+传统漫剧与动态漫制作面临长周期、高人力成本与制作标准难以统一的行业痛点。在长角鹿科技期间，我作为项目负责人带领三人团队，从零研发了工业级 **AI 漫剧生成平台**。
+
+平台打通了从纯文本网络小说、文学剧本到成片视频的全流程，通过将**大模型智能体（Agent Harness）**与**多模态生图/生视频模型**结合，使漫剧单集制作周期从过去的数周缩短至小时级。
+
+<CardGroup cols={2}>
+  <Card title="Agent Harness 架构" icon="microchip" href="/projects/ai-comic/harness">
+    自研 Agent 调度中枢、Skill 体系与 MCP 扩展集成
+  </Card>
+  <Card title="全链路制作管线" icon="film" href="/projects/ai-comic/pipeline">
+    剧本解析、分镜提示词、图像视频渲染与音视频合成
+  </Card>
+</CardGroup>
+
+---
+
+## 技术架构总览
+
+- **前端架构**：Vue 3、TypeScript、Tailwind CSS、Shadcn/UI，提供导演级分镜画板与时间轴编辑台。
+- **后端服务**：Django + FastAPI 双引擎架构，MySQL 存储实体与剧本元数据，Redis 处理任务队列与发布订阅。
+- **AI 智能中枢**：基于自研 Agent Harness 构建，集成 LiteLLM 统一网关、MCP Server 插件体系与 ComfyUI 分布式 GPU 渲染集群。
+- **权限与团队协同**：支持导演、编剧、审核员等多角色协同，细粒度权限控制与版本流转。

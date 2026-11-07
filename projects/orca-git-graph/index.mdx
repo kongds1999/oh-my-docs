@@ -1,0 +1,46 @@
+---
+title: "Orca Git Graph 提交图插件"
+sidebarTitle: "项目概览"
+description: "将经典 Git Graph 移植至 Orca 全宽编辑器标签页，Trusted Worker 独立进程驱动，完整支持全套 Git 视窗操作。"
+---
+
+## 项目简介
+
+在从 VS Code 迁移至 Orca 之后，为了解决复杂多分支开发与多 Worktree 场景下的历史树可视化诉求，我将社区经典的 [mhutchie/vscode-git-graph](https://github.com/mhutchie/vscode-git-graph) 移植到了 Orca 平台。
+
+本项目采用 Orca 原生的 **Trusted Worker** 独立进程架构，将提交图由窄挤的侧边栏重构为 **全宽编辑器标签页（Custom Editor）**，并对全套 Git 读写操作逻辑与深层边界进行了系统加固。
+
+<CardGroup cols={2}>
+  <Card title="GitHub 个人私有仓库" icon="github" href="https://github.com/kongds1999/orca-git-graph">
+    查看源码与安装指引（受原许可证限制仅供个人本地使用）
+  </Card>
+  <Card title="朋友圈复盘文章" icon="heart" href="/moments/orca-git-graph">
+    阅读折腾与踩坑速记
+  </Card>
+</CardGroup>
+
+---
+
+## 核心设计亮点
+
+1. **全宽编辑器标签页体验**：以 Custom Editor 模式（`.gitgraph`）在中央编辑区打开，彻底告别侧边栏的信息拥挤与截断，多列信息与提交树展开自如。
+2. **Trusted Worker 独立进程**：运行在独立的 Node Worker 中，通过 `window.acquireVsCodeApi()` 协议 shim 与 Webview 通信，保障主进程与前端隔离。
+3. **零外部依赖的数据层**：原生数组化 `child_process.execFile` 安全调用系统 Git，严防 Ref 参数注入，轻巧高效。
+4. **全套 Git 视窗写操作**：
+   - 分支管理（创建、切换、删除、重命名、Pull/Push/Fetch、追踪关联）；
+   - 提交与历史操作（Cherry-pick、Revert、Reset soft/mixed/hard、Drop、Merge、Rebase）；
+   - 标签与贮藏（轻量与附注标签、Stash push/apply/pop/drop）；
+   - 视图状态与列宽持久化（通过 `orca.storage` 跨会话恢复）。
+
+---
+
+## 架构与技术深度
+
+<CardGroup cols={2}>
+  <Card title="技术复盘长文" icon="book-open" href="/posts/2026-11/orca-git-graph">
+    深入阅读关于 Trusted Worker、协议适配与 Git 边界坑的架构分析文章。
+  </Card>
+  <Card title="朋友圈随笔" icon="sparkles" href="/moments/orca-git-graph">
+    阅读第一篇体验笔记与折腾速记。
+  </Card>
+</CardGroup>

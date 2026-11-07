@@ -1,0 +1,38 @@
+---
+title: 项目
+sidebarTitle: 概览
+description: 个人开源项目、工程落地与实验性探索展示。
+---
+
+这里汇总了我在 AIGC 算法、Agent 架构设计与全栈工程落地等方向的部分项目实践。点击下方卡片或左侧侧边栏可进入对应项目的详细设计与技术实现。
+
+## 重点项目
+
+<CardGroup cols={2}>
+  <Card title="Claude Code CLI 复现" icon="terminal" href="/projects/claude-code-cli/index">
+    基于 OpenAI Agents SDK 拆解与复现 Claude Code CLI，实现核心 Loop、工具调用与裁剪、Skill 装载、子 Agent、Streaming、Plan 模式与 Checkpoint 恢复。
+  </Card>
+  <Card title="AI 漫剧生成平台" icon="film" href="/projects/ai-comic/index">
+    端到端 AI 漫剧制作平台，从剧本处理、分集分镜、多模态资产生成到视频合成；内置自研 Agent Harness，实现工具调度、Skill 管理与 MCP 扩展。
+  </Card>
+  <Card title="Bloub Avatar 拟态小团子" icon="sparkles" href="/projects/bloub-avatar/index">
+    纯 SVG 结合数学插值逐帧还原 x.ai (Grok) 灵动拟态小团子，14 种情绪表情与平滑变形过渡，完全零第三方动效库依赖。
+  </Card>
+  <Card title="AI 画廊 & 批量工作台" icon="image" href="/projects/ai-gallery/index">
+    预置 30+ 图像风格模型与提示词模板，通过 ComfyUI API 统一部署；支持数据集批量生成、任务中控、状态流转与资产管理。
+  </Card>
+  <Card title="Orca Git Graph 提交图插件" icon="git-branch" href="/projects/orca-git-graph/index">
+    将经典 Git Graph 移植至 Orca 全宽编辑器标签页，Trusted Worker 独立进程驱动，完整支持全套 Git 视窗操作。
+  </Card>
+</CardGroup>
+
+## 算法研究与技术沉淀
+
+<CardGroup cols={2}>
+  <Card title="2D 虚拟试衣算法研究" icon="shirt" href="/projects/virtual-try-on/index">
+    国家自然科学基金课题，基于归一化流的服装形变网络与多尺度特征融合，结合扩散修复模型实现服装平滑迁移，获国家发明专利与国际会议论文。
+  </Card>
+  <Card title="OpenAI Agents SDK 系列教程" icon="book-open" href="/docs/openai-agents/index">
+    系统化梳理 OpenAI Agents SDK 核心架构：Agent Loop、Subagent、Skill 动态装载、MCP Server 扩展与 Checkpoint 状态保持。
+  </Card>
+</CardGroup>

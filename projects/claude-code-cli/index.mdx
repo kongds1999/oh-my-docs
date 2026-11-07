@@ -1,0 +1,42 @@
+---
+title: "Claude Code CLI 复现"
+sidebarTitle: "项目概览"
+description: "基于 OpenAI Agents SDK 拆解与复现 Claude Code CLI，实现核心 Loop、工具裁剪、Skill 装载与 Checkpoint 状态保持。"
+---
+
+## 项目背景
+
+[Claude Code](https://github.com/anthropics/claude-code) 展现了 Agent 在软件工程场景下的强大生产力。本项目 **agent_from_scatch** 是对 Coding Agent 架构与工程落地的系统性逆向与复现实践。
+
+基于 **OpenAI Agents SDK**，从最简的 Agent Loop 开始，逐步拓展工具生态、上下文管理、流式交互与状态持久化机制，构建了一个具备生产可用性的终端智能体。
+
+<CardGroup cols={2}>
+  <Card title="GitHub 源码仓库" icon="github" href="https://github.com/kongds1999/agent_from_scatch">
+    访问 agent_from_scatch 完整 Python 源码与实现
+  </Card>
+  <Card title="OpenAI Agents SDK 教程" icon="book-open" href="/docs/openai-agents/index">
+    查看配套的 OpenAI Agents SDK 核心架构与实战文档
+  </Card>
+</CardGroup>
+
+---
+
+## 核心设计目标
+
+1. **确定性与可靠性优先**：通过系统化的指令分层与工具输出约束，规避大模型幻觉与上下文越界。
+2. **轻量与高扩展**：采用模块化结构，支持动态注册自定义 Skill 工具与 MCP Server 协议。
+3. **沉浸式交互体验**：提供类似终端 IDE 的流式响应、进度展示与快捷键命令交互。
+4. **会话可追溯与可恢复**：基于 Checkpoint 机制，支持任意时刻暂停、归档与会话重放。
+
+---
+
+## 模块导读
+
+<CardGroup cols={2}>
+  <Card title="架构设计与 Agent Loop" icon="diagram-project" href="/projects/claude-code-cli/architecture">
+    解析核心 Agent Loop、上下文压缩与流式响应管道设计。
+  </Card>
+  <Card title="功能特性与 Checkpoint" icon="cube" href="/projects/claude-code-cli/features">
+    详解工具调用裁剪、Skill 装载、子 Agent 协作与状态保持。
+  </Card>
+</CardGroup>

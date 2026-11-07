@@ -1,0 +1,47 @@
+---
+title: "全链路制作管线"
+sidebarTitle: "制作管线"
+description: "漫剧生产工业化全流程：剧本解析、分镜转化、多模态渲染、后期质检与音视频合成。"
+---
+
+## 生产流水线全貌
+
+AI 漫剧从小说原著到成片输出经历五个标准工序阶段：
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Writer as 编剧/导演
+    participant Script as 剧本结构化引擎
+    participant Storyboard as 分镜与提示词中控
+    participant Render as ComfyUI 渲染集群
+    participant Post as 音视频后期合成
+    
+    Writer->>Script: 输入章节原文
+    Script-->>Writer: 输出角色/场景图谱与分集脚本
+    Writer->>Storyboard: 确认并生成分镜镜头
+    Storyboard->>Render: 派发图像与视频生成任务
+    Render-->>Storyboard: 返回渲染帧资产
+    Storyboard->>Post: 触发智能抠图/配音/字幕合成
+    Post-->>Writer: 导出成品 MP4 视频
+```
+
+---
+
+## 各阶段技术实践
+
+### 1. 剧本结构化与实体提取
+- 利用 LLM 解析原文对话与环境描写，抽离角色情绪状态、时间空间坐标与道具变更。
+- 自动生成标准化分场表，指导后续分镜分配。
+
+### 2. 镜头语言与提示词映射
+- 将文学语言转化为影视分镜描述（景别：特写/全景；视角：俯视/仰视；光影氛围）。
+- 结合角色 LoRA 触发词与负向提示词模板，自动构造 ComfyUI API 适配的参数包。
+
+### 3. 多模态渲染与批量处理
+- 调度 ComfyUI 工作流实现多通道渲染：基础画面生成 -> IP-Adapter 角色面部特征迁移 -> ControlNet 姿态对齐。
+- 支持失败重试、批次并发调优与显卡集群负载均衡。
+
+### 4. 智能后期处理与字幕对齐
+- **字幕擦除与重建**：针对参考画面中的硬字幕采用轻量修复模型自动擦除。
+- **语音合成与对口型**：基于角色人设自动匹配 TTS 声音音色，利用声学特征对齐分镜口型与字幕轴。
