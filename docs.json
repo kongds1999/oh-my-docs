@@ -112,6 +112,7 @@
           {
             "group": "Articles",
             "pages": [
+              "posts/2026-11/pi-durable",
               "posts/2026-11/orca-git-graph",
               "posts/2026-09/jev",
               "posts/2026-05/building-effective-agents",
