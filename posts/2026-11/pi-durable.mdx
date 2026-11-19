@@ -1,0 +1,202 @@
+---
+title: "Pi Durable：把 Agent 做成服务时，缺的不是 API，而是 Durable Harness"
+description: "从本地 Pi 到可嵌入 runtime：为什么 Web 集成不够，以及 Pi Durable / Cloudflare PiHarness 如何用 checkpoint、replay、Documents 把长跑 agent 做硬。"
+date: 2026-11-18
+---
+
+Earendil 在发布 Pi 1.0 的同时，抛出了一个实验性包：[Pi Durable](https://earendil.com/posts/pi-durable/)。第一眼容易把它理解成「把本地 coding agent 搬上云」。更准确的说法是：
+
+> **Pi Durable 既是可嵌入任意应用的 agent runtime，也是一套为长跑、可恢复、多端协作设计的 harness 原语——只做集成不够，还必须 durable。**
+
+本文按这个主线梳理概念，对照自己搭 Web harness 时踩过的坑，并记录一次把 Pi Durable 嵌进 Cloudflare 的实践。
+
+---
+
+## 1. 从本地 Pi 到可嵌入 runtime
+
+Pi coding agent 的主战场很清楚：跑在你的（远程）机器上、终端里、一个人驱动。进程挂了，你看现场，再让它继续。Pi 1.0 仍然专注并擅长这件事。
+
+Pi Durable **不替代** 这个产品。它是一套用来构建任意 agentic 应用的框架——coding agent 只是其中一个用例。它和 Pi 共享部分代码（如 `pi-ai`）与原则：**minimalism** 与 **malleability**，并刻意把实验放在 Durable 侧，验证后再回流到 coding agent。
+
+### 他们眼里的 Harness
+
+Earendil 给 Pi Durable 的定义偏运行时：
+
+> **Harness = storage + 并行跑多路 LLM conversation 的机器 + tools + execution environment**
+
+几个对象值得对齐：
+
+| 概念 | 含义 |
+|------|------|
+| **Conversation** | 你与 agent 的交互，记成 transcript |
+| **Agent** | 模型 + 设置（如 thinking level）+ 可用 tools |
+| **Execution environment** | tool 真正落地的地方：本机、远程 VM、内存沙箱…… |
+| **Task** | 调用模型、执行 tool、compaction——harness 里每一步都是任务 |
+
+源码刻意保持可读（无测试约 15k 行），让 agent 自己也能理解并改它。对建设者来说，这不是「又一个聊天 SDK」，而是一套**可替换存储与执行环境的运行时契约**。
+
+用 Web 场景重述一遍：
+
+```text
+你的 Web / Slack / 内部系统
+        ↓  HTTP / WebSocket
+Pi Durable Harness（你的后端进程）
+        ├── Storage（memory / SQLite / JSONL / 自研）
+        ├── Conversations（用户会话、工单线程 fork）
+        ├── Tools + Execution Env（本机 / 远程 / sandbox）
+        └── Multiplayer view（前端订阅 streaming / 状态）
+```
+
+用户关页、后端重启、换设备回来——conversation 还在；运营甚至可以在后台 steer 同一会话。这才是「集成成系统里的一个 agent」，而不只是页面里嵌个聊天框。
+
+---
+
+## 2. 只做集成不够：三个会炸的现实问题
+
+把本地 agent 嵌进 Web，很多框架都能做。一旦它变成服务，下面三类问题会立刻出现——也都是我自己搭 harness 时有体感的。
+
+### 2.1 挂了就断，人离不开机器
+
+本地 agent 的可用性，绑在「那台进程还活着 + 那个人还守着」上。笔记本睡眠、容器滚动更新、OOM，都会把一次长跑打断。
+
+Web 侧的诉求不只是「换个前端」，而是：
+
+- runtime 可换（本机 / 云 / sandbox / Durable Object）
+- 中断后能 **resume**
+- 操作面可换（终端、网页、Slack 都只是 client）
+
+### 2.2 云端工具不能照搬 bash / read / write / edit
+
+本地 coding agent 赖以生存的工具面，假设了本机 shell 与文件系统。嵌进 Web 之后，尤其是要和业务系统交互时，工具必须按场景重做：工单 API、权限边界、浏览器能力、不可随意 `rm -rf`。
+
+更深一层是 **重试语义**：云端工具往往有副作用。挂了能不能重跑，必须显式声明，而不能默认「再调一次」。
+
+### 2.3 业务状态和聊天记录不同步
+
+自己搭 Web harness 时，很容易维护两份世界：
+
+- UI 里的 todo / plan / 工单状态
+- 模型实际看到的上下文
+
+结果是：页面显示一套，模型按另一套推理；compaction 或 reset 之后更糟。根因通常是：**应用状态没有和对话记录共用同一套持久化与提交边界**。
+
+---
+
+## 3. Harness 原语如何对上这些问题
+
+Pi Durable 的差异化，不在「能 `submit` 一句话」，而在把上述约束做成原语。
+
+### Storage + resume
+
+Harness 打开在某个 storage 上（memory / SQLite / JSONL，并提供 conformance）。SQLite / JSONL 不绑 Node，可上 Bun 或 Cloudflare Durable Object。内存只保留 working set；长 transcript 靠 compaction 压住。
+
+每一步 run 都是带 checkpoint 的 task。进程死后，新进程打开同一 storage，从未完成 task 的断点继续：
+
+- 被切断的模型请求会重发（部分答案标为 aborted）
+- tool 按 `replay` 决定是否重跑
+- `requestId` 让 submission **exactly-once**，客户端崩溃重试不会双提交
+
+### Env + Extensions / Tools
+
+Tool 的「意图」在 harness 里（durable task），「落地」在 execution environment 里。`env` 可按 conversation 注入不同 cwd / 机器；fork 出的线程可以 search 但不能 deploy。
+
+Extension 是可插拔的 system prompt sections、tools、hooks、custom tasks，且都参与 durability。例如：
+
+```ts
+replay: "safe"   // 只读或整体写：崩溃后可重跑
+// 不写 replay   // deploy / 扣款：中断则告诉模型，绝不自动重复
+```
+
+这直接回应了「云端工具重设计」：你不只是换工具列表，还要为每个副作用写清失败契约。
+
+### Documents + sections
+
+应用状态（todo、plan、ticket、sandbox 元数据）放在 **Documents** 里：与 transcript 同事务 commit，UI 订阅的是 committed document，system prompt sections 每次请求现渲染。模型看到的，就是最新提交视图——而不是前端私有缓存。
+
+Fork 时还可选择文档起点：`asOf`（分叉点）、当前值、或全新一份。这正好治「UI 与模型上下文不一致」。
+
+---
+
+## 4. Fork、Ownership、Compaction
+
+这三块值得单独拎出来，因为它们决定「像服务一样跑」时的并发与清理语义。
+
+### Fork
+
+一个 harness 可并发跑多路 conversation。Conversation 可从另一路 transcript 的任意点 **fork**：子会话看见父历史到该点，却不复制整棵树。
+
+心智模型很像 Slack：频道是一条 conversation，线程是对某条回复的 fork。两边同时跑，互不阻塞。每个 conversation 还可配置自己的模型、工具子集、instructions、cwd——审稿 agent 可以更便宜、只读、独立 checkout。
+
+### Ownership
+
+Tasks 与 conversations 组成一棵 **ownership tree**。Abort 自下而上：子任务先清理自己的副作用，父任务才结束。Subagent 就是「被某个 tool call 拥有的 conversation」。
+
+默认 task 是 foreground：算 conversation 当前工作的一部分，Esc 会带走它及其子孙。Background task 属于 conversation，但不属于「当前这一回合」——会话可以 idle，普通 abort 不会动它（适合跨回合提醒、应活过当前 turn 的子代理）。这对「服务里谁该被取消」比本地终端直觉重要得多。
+
+### Compaction
+
+长对话不能靠人工停下来总结。Compaction 也是 task：接近上下文上限时后台摘要，必要时才阻塞下一次请求；provider 仍报太长则 compact 后重试一次。`reset` / tool 返回的 `handoff` 可开新上下文，但旧消息仍在 storage，可用 tool 搜索——agent 能对自己做交接班，而不靠删历史装失忆。
+
+---
+
+## 5. 实践：把 Pi Durable 嵌进 Cloudflare
+
+概念对齐之后，最直接的落地路径是 Cloudflare Agents SDK 的 [`PiHarness`](https://developers.cloudflare.com/agents/harnesses/pi/)：在 Durable Object 里跑 Pi Durable，用 DO 的 SQLite 做 storage，用 Lifecycle job 在对象被驱逐后按 alarm **wake**，让未完成的 run 从 checkpoint 继续。
+
+官方完整示例在 [`cloudflare/agents` → `examples/next/harnesses/pi`](https://github.com/cloudflare/agents/tree/main/examples/next/harnesses/pi)：WebSocket UI、`session.watch()`、以及 `@cloudflare/computer` 工作区工具。
+
+我这边实际部署时，踩到几处和「Free / BYOK / catalog」强相关的坑，记在这里供后来者避雷：
+
+1. **Dynamic Workers（`LOADER` / `exec`）**  
+   完整示例依赖 `worker_loaders`。临时账号与免费档会直接拒部署。实践上可裁掉 `exec` / git，只保留 workspace 文件类工具，先把 durable chat 跑通。
+
+2. **Workers AI 模型要在 `createAI` catalog 里，且 Free 可用**  
+   例如 `@cf/zai-org/glm-5.3-flash` 会报 Free plan 不可用；而 catalog 内的 `@cf/zai-org/glm-4.7-flash` 可以先用来验收 harness。不是任意 `@cf/...` 字符串都能 `getModel`。
+
+3. **DeepSeek BYOK 要走 model object + Gateway id**  
+   `createAI({ binding: env.AI, id: "default" })`，再用 `getBuiltinModel("deepseek", ...)`（或等价 model object）走 provider-native。  
+   直接写 catalog 字符串 `deepseek/deepseek-chat` 会报「不在 Cloudflare AI Gateway catalog」。  
+   BYOK Provider Key 配错时，DeepSeek 侧返回典型的 `Authentication Fails (governor)`（401）——这是网关密钥问题，不是 PiHarness 逻辑问题。
+
+4. **会话状态跟模型绑定**  
+   改默认模型后务必开**新 session**；旧 DO 会话仍可能记着上一版 agent 配置。
+
+跑通后的 playground：
+
+**https://harry-pi-durable-demo.kongds1999.workers.dev/**
+
+分工可以记成一句话：**Pi 负责 transcript / inbox / tasks / recovery；Cloudflare Lifecycle 负责 DO 的 wake 与 SQLite 生命周期。** `PiHarness` 不替你选传输层——WebSocket 还是 HTTP，是应用自己把 `session.watch()` 推出去。
+
+---
+
+## 6. 对建设者的启示
+
+如果目标是「系统里的一个 agent」，而不是「又一个聊天页」，最小集合更接近：
+
+1. **同一套持久化边界**：对话、任务、业务 Documents 一起 commit  
+2. **可恢复**：checkpoint + 明确的 tool replay  
+3. **Exactly-once 入口**：客户端重试有 `requestId`  
+4. **工具按环境重做**：env 可替换，副作用可声明  
+5. **多端 view**：UI 订阅 committed state，而不是私有缓存  
+6. **Fork / ownership**：并发与取消语义写清楚，而不是靠约定
+
+Pi Durable 把这些收成可实现的接口；Cloudflare 的 `PiHarness` 则证明：同一套 harness 可以长在 Durable Object 上，被网页当服务调用。
+
+---
+
+## 7. 边界
+
+- Pi Durable 仍是 **experimental**，API 可能变。  
+- 它不是托管 SaaS：你要自己 `Harness.open(...)`，自己选 storage / env / 暴露面。  
+- 它不取代本地 Pi coding agent；两者解决问题不同。  
+- 平台侧还有配额与产品限制（Free 模型、Dynamic Workers、Gateway 认证等），实践时要把「harness 正确」和「账号能力」分开排查。
+
+---
+
+## 参考
+
+- [Pi Durable（Earendil）](https://earendil.com/posts/pi-durable/)
+- [Cloudflare Agents：Pi harness](https://developers.cloudflare.com/agents/harnesses/pi/)
+- [官方示例 `examples/next/harnesses/pi`](https://github.com/cloudflare/agents/tree/main/examples/next/harnesses/pi)
+
+**一句话收束：** 把 agent 嵌进 Web 时，缺的往往不是又一个 chat API，而是一套在失败、重试与多端之下仍然一致的 durable harness。
