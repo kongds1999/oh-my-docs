@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "mode": "architecture",
+  "template_type": "architecture",
+  "style": 4,
+  "quality_profile": "standard",
+  "width": 720,
+  "height": 380,
+  "title": "requestId: admit once",
+  "subtitle": "same conversation, same key",
+  "text_policy": "strict",
+  "containers": [],
+  "nodes": [
+    {
+      "id": "s1",
+      "kind": "rect",
+      "x": 40,
+      "y": 120,
+      "width": 150,
+      "height": 56,
+      "label": "submit #1",
+      "sublabel": "greeting-1",
+      "fill": "#f9fafb",
+      "stroke": "#d1d5db",
+      "flat": true
+    },
+    {
+      "id": "s2",
+      "kind": "rect",
+      "x": 40,
+      "y": 220,
+      "width": 150,
+      "height": 56,
+      "label": "submit #2",
+      "sublabel": "greeting-1",
+      "fill": "#f9fafb",
+      "stroke": "#d1d5db",
+      "flat": true
+    },
+    {
+      "id": "harness",
+      "kind": "rect",
+      "x": 270,
+      "y": 160,
+      "width": 150,
+      "height": 70,
+      "label": "Harness",
+      "sublabel": "lookup key",
+      "fill": "#eff6ff",
+      "stroke": "#3b82f6",
+      "flat": true
+    },
+    {
+      "id": "one",
+      "kind": "rect",
+      "x": 500,
+      "y": 160,
+      "width": 170,
+      "height": 70,
+      "label": "submission 25",
+      "sublabel": "no 2nd LLM call",
+      "fill": "#f0fdf4",
+      "stroke": "#16a34a",
+      "flat": true
+    }
+  ],
+  "arrows": [
+    {
+      "id": "a1",
+      "source": "s1",
+      "target": "harness",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "control",
+      "route_points": [
+        [
+          200,
+          148
+        ],
+        [
+          200,
+          180
+        ],
+        [
+          270,
+          180
+        ]
+      ]
+    },
+    {
+      "id": "a2",
+      "source": "s2",
+      "target": "harness",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "async",
+      "dashed": true,
+      "route_points": [
+        [
+          200,
+          248
+        ],
+        [
+          200,
+          210
+        ],
+        [
+          270,
+          210
+        ]
+      ]
+    },
+    {
+      "id": "a3",
+      "source": "harness",
+      "target": "one",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "data",
+      "label": "same id"
+    }
+  ],
+  "legend_orientation": "horizontal",
+  "legend_locked": false,
+  "legend": [
+    {
+      "flow": "control",
+      "label": "create"
+    },
+    {
+      "flow": "async",
+      "label": "dedupe"
+    },
+    {
+      "flow": "data",
+      "label": "reuse"
+    }
+  ],
+  "footer": "covers ingress, not tool replay"
+}

@@ -1,14 +1,14 @@
 ---
-title: "Pi Durable：把 Agent 做成服务时，缺的不是 API，而是 Durable Harness"
-description: "从本地 Pi 到可嵌入 runtime：为什么 Web 集成不够，以及 Pi Durable / Cloudflare PiHarness 如何用 checkpoint、replay、Documents 把长跑 agent 做硬。"
+title: "Pi Durable：持续可恢复"
+description: "可嵌入的 agent harness：checkpoint、replay、Documents，以及 Cloudflare 上的一次落地。"
 date: 2026-11-18
 ---
 
 Earendil 在发布 Pi 1.0 的同时，抛出了一个实验性包：[Pi Durable](https://earendil.com/posts/pi-durable/)。第一眼容易把它理解成「把本地 coding agent 搬上云」。更准确的说法是：
 
-> **Pi Durable 既是可嵌入任意应用的 agent runtime，也是一套为长跑、可恢复、多端协作设计的 harness 原语——只做集成不够，还必须 durable。**
+> **Pi Durable 是可嵌入的 agent runtime，也是一套为长跑、可恢复、多端协作设计的 harness 原语——只做集成不够，还必须 durable。**
 
-本文按这个主线梳理概念，对照自己搭 Web harness 时踩过的坑，并记录一次把 Pi Durable 嵌进 Cloudflare 的实践。
+本文按这个主线梳理概念，对照自己搭 Web harness 时踩过的坑，并记录一次把 Pi Durable 嵌进 Cloudflare 的实践。若要从最小示例拆开 SQLite 账本，见 [《Pi Durable Hello：核心概念拆解梳理》](/posts/2026-11/pi-durable-hello)。
 
 ---
 
@@ -35,17 +35,7 @@ Earendil 给 Pi Durable 的定义偏运行时：
 
 源码刻意保持可读（无测试约 15k 行），让 agent 自己也能理解并改它。对建设者来说，这不是「又一个聊天 SDK」，而是一套**可替换存储与执行环境的运行时契约**。
 
-用 Web 场景重述一遍：
-
-```text
-你的 Web / Slack / 内部系统
-        ↓  HTTP / WebSocket
-Pi Durable Harness（你的后端进程）
-        ├── Storage（memory / SQLite / JSONL / 自研）
-        ├── Conversations（用户会话、工单线程 fork）
-        ├── Tools + Execution Env（本机 / 远程 / sandbox）
-        └── Multiplayer view（前端订阅 streaming / 状态）
-```
+![](/images/posts/pi-durable/06-harness-embed.png)
 
 用户关页、后端重启、换设备回来——conversation 还在；运营甚至可以在后台 steer 同一会话。这才是「集成成系统里的一个 agent」，而不只是页面里嵌个聊天框。
 
@@ -199,4 +189,4 @@ Pi Durable 把这些收成可实现的接口；Cloudflare 的 `PiHarness` 则证
 - [Cloudflare Agents：Pi harness](https://developers.cloudflare.com/agents/harnesses/pi/)
 - [官方示例 `examples/next/harnesses/pi`](https://github.com/cloudflare/agents/tree/main/examples/next/harnesses/pi)
 
-**一句话收束：** 把 agent 嵌进 Web 时，缺的往往不是又一个 chat API，而是一套在失败、重试与多端之下仍然一致的 durable harness。
+**一句话收束：** 把 agent 嵌进系统时，缺的往往不是又一个 chat API，而是一套在失败、重试与多端之下仍然一致的 durable harness。

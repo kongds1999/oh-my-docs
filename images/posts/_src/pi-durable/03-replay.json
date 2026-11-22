@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "mode": "architecture",
+  "template_type": "architecture",
+  "style": 4,
+  "quality_profile": "standard",
+  "width": 780,
+  "height": 440,
+  "title": "After crash: replay policy",
+  "subtitle": "unsafe \u2192 interrupted, not silent rerun",
+  "text_policy": "strict",
+  "containers": [
+    {
+      "id": "disk",
+      "x": 36,
+      "y": 100,
+      "width": 300,
+      "height": 200,
+      "label": "SQLite checkpoint"
+    },
+    {
+      "id": "resume",
+      "x": 400,
+      "y": 100,
+      "width": 340,
+      "height": 200,
+      "label": "resume()"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "tool",
+      "kind": "rect",
+      "x": 64,
+      "y": 140,
+      "width": 240,
+      "height": 56,
+      "label": "pi.tool running",
+      "sublabel": "replay: unsafe",
+      "fill": "#fef3c7",
+      "stroke": "#d97706",
+      "flat": true
+    },
+    {
+      "id": "ckpt",
+      "kind": "rect",
+      "x": 64,
+      "y": 220,
+      "width": 240,
+      "height": 48,
+      "label": "checkpoint",
+      "sublabel": "phase=execute",
+      "fill": "#f9fafb",
+      "stroke": "#d1d5db",
+      "flat": true
+    },
+    {
+      "id": "decide",
+      "kind": "rect",
+      "x": 470,
+      "y": 140,
+      "width": 180,
+      "height": 56,
+      "label": "replay == safe?",
+      "fill": "#eff6ff",
+      "stroke": "#3b82f6",
+      "flat": true
+    },
+    {
+      "id": "rerun",
+      "kind": "rect",
+      "x": 420,
+      "y": 230,
+      "width": 120,
+      "height": 44,
+      "label": "rerun tool",
+      "fill": "#f0fdf4",
+      "stroke": "#16a34a",
+      "flat": true
+    },
+    {
+      "id": "intr",
+      "kind": "rect",
+      "x": 590,
+      "y": 230,
+      "width": 140,
+      "height": 44,
+      "label": "interrupted",
+      "sublabel": "tool-result",
+      "fill": "#fef2f2",
+      "stroke": "#dc2626",
+      "flat": true
+    }
+  ],
+  "arrows": [
+    {
+      "id": "a1",
+      "source": "tool",
+      "target": "ckpt",
+      "source_port": "bottom",
+      "target_port": "top",
+      "flow": "write"
+    },
+    {
+      "id": "a2",
+      "source": "ckpt",
+      "target": "decide",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "control",
+      "route_points": [
+        [
+          320,
+          244
+        ],
+        [
+          320,
+          168
+        ],
+        [
+          470,
+          168
+        ]
+      ]
+    },
+    {
+      "id": "a3",
+      "source": "decide",
+      "target": "rerun",
+      "source_port": "bottom",
+      "target_port": "top",
+      "flow": "data"
+    },
+    {
+      "id": "a4",
+      "source": "decide",
+      "target": "intr",
+      "source_port": "bottom",
+      "target_port": "top",
+      "flow": "async",
+      "dashed": true
+    }
+  ],
+  "legend_orientation": "horizontal",
+  "legend_locked": false,
+  "legend": [
+    {
+      "flow": "write",
+      "label": "checkpoint"
+    },
+    {
+      "flow": "control",
+      "label": "recover"
+    },
+    {
+      "flow": "async",
+      "label": "default"
+    }
+  ],
+  "footer": "bash defaults to unsafe"
+}
