@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "mode": "architecture",
+  "template_type": "architecture",
+  "style": 4,
+  "quality_profile": "standard",
+  "width": 760,
+  "height": 420,
+  "title": "SQLite ledger layers",
+  "subtitle": "message blocks \u2286 entries \u2286 whole DB",
+  "text_policy": "strict",
+  "containers": [
+    {
+      "id": "outer",
+      "x": 36,
+      "y": 96,
+      "width": 688,
+      "height": 220,
+      "label": "agent.sqlite"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "msgs",
+      "kind": "rect",
+      "x": 56,
+      "y": 150,
+      "width": 160,
+      "height": 64,
+      "label": "Message blocks",
+      "sublabel": "text / toolCall",
+      "fill": "#f9fafb",
+      "stroke": "#d1d5db",
+      "flat": true
+    },
+    {
+      "id": "entries",
+      "kind": "rect",
+      "x": 290,
+      "y": 150,
+      "width": 160,
+      "height": 64,
+      "label": "entries",
+      "sublabel": "pi.user / assistant",
+      "fill": "#eff6ff",
+      "stroke": "#3b82f6",
+      "flat": true
+    },
+    {
+      "id": "rest",
+      "kind": "rect",
+      "x": 520,
+      "y": 150,
+      "width": 160,
+      "height": 64,
+      "label": "Other records",
+      "sublabel": "task / sub / doc",
+      "fill": "#f0fdf4",
+      "stroke": "#16a34a",
+      "flat": true
+    },
+    {
+      "id": "print",
+      "kind": "rect",
+      "x": 280,
+      "y": 260,
+      "width": 160,
+      "height": 40,
+      "label": "printTranscript",
+      "fill": "#f9fafb",
+      "stroke": "#d1d5db",
+      "flat": true
+    }
+  ],
+  "arrows": [
+    {
+      "id": "a1",
+      "source": "msgs",
+      "target": "entries",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "data"
+    },
+    {
+      "id": "a2",
+      "source": "entries",
+      "target": "rest",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "control"
+    },
+    {
+      "id": "a3",
+      "source": "entries",
+      "target": "print",
+      "source_port": "bottom",
+      "target_port": "top",
+      "flow": "read"
+    }
+  ],
+  "legend_orientation": "horizontal",
+  "legend_locked": false,
+  "legend": [
+    {
+      "flow": "data",
+      "label": "embed"
+    },
+    {
+      "flow": "control",
+      "label": "coexist"
+    },
+    {
+      "flow": "read",
+      "label": "read"
+    }
+  ],
+  "footer": "hello lesson: ledger layers"
+}

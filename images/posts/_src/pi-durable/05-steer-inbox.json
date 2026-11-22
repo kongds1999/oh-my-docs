@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "mode": "architecture",
+  "template_type": "architecture",
+  "style": 4,
+  "quality_profile": "standard",
+  "width": 780,
+  "height": 420,
+  "title": "watch: steer via inbox",
+  "subtitle": "join after the tool round",
+  "text_policy": "strict",
+  "containers": [
+    {
+      "id": "run",
+      "x": 36,
+      "y": 100,
+      "width": 360,
+      "height": 210,
+      "label": "active run"
+    },
+    {
+      "id": "side",
+      "x": 440,
+      "y": 100,
+      "width": 300,
+      "height": 210,
+      "label": "side channel"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "main",
+      "kind": "rect",
+      "x": 64,
+      "y": 140,
+      "width": 140,
+      "height": 50,
+      "label": "main input",
+      "sublabel": "!sleep 2…",
+      "fill": "#eff6ff",
+      "stroke": "#3b82f6",
+      "flat": true
+    },
+    {
+      "id": "bash",
+      "kind": "rect",
+      "x": 240,
+      "y": 140,
+      "width": 130,
+      "height": 50,
+      "label": "bash tool",
+      "sublabel": "running",
+      "fill": "#fef3c7",
+      "stroke": "#d97706",
+      "flat": true
+    },
+    {
+      "id": "boundary",
+      "kind": "rect",
+      "x": 160,
+      "y": 230,
+      "width": 140,
+      "height": 50,
+      "label": "tool boundary",
+      "fill": "#f0fdf4",
+      "stroke": "#16a34a",
+      "flat": true
+    },
+    {
+      "id": "steer",
+      "kind": "rect",
+      "x": 480,
+      "y": 140,
+      "width": 200,
+      "height": 50,
+      "label": "steer input",
+      "sublabel": "whenBusy",
+      "fill": "#f9fafb",
+      "stroke": "#d1d5db",
+      "flat": true
+    },
+    {
+      "id": "inbox",
+      "kind": "rect",
+      "x": 480,
+      "y": 230,
+      "width": 200,
+      "height": 50,
+      "label": "pi.inbox",
+      "sublabel": "document",
+      "fill": "#faf5ff",
+      "stroke": "#7c3aed",
+      "flat": true
+    }
+  ],
+  "arrows": [
+    {
+      "id": "a1",
+      "source": "main",
+      "target": "bash",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "control"
+    },
+    {
+      "id": "a2",
+      "source": "bash",
+      "target": "boundary",
+      "source_port": "bottom",
+      "target_port": "top",
+      "flow": "data"
+    },
+    {
+      "id": "a3",
+      "source": "steer",
+      "target": "inbox",
+      "source_port": "bottom",
+      "target_port": "top",
+      "flow": "write",
+      "label": "queue"
+    },
+    {
+      "id": "a4",
+      "source": "inbox",
+      "target": "boundary",
+      "source_port": "left",
+      "target_port": "right",
+      "flow": "async",
+      "label": "place",
+      "dashed": true
+    }
+  ],
+  "legend_orientation": "horizontal",
+  "legend_locked": false,
+  "legend": [
+    {
+      "flow": "control",
+      "label": "main"
+    },
+    {
+      "flow": "write",
+      "label": "queue"
+    },
+    {
+      "flow": "async",
+      "label": "merge"
+    }
+  ],
+  "footer": "UI watches committed events"
+}

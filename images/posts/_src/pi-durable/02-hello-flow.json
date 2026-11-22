@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "mode": "architecture",
+  "template_type": "architecture",
+  "style": 4,
+  "quality_profile": "standard",
+  "width": 820,
+  "height": 380,
+  "title": "hello: one submission",
+  "subtitle": "commit first, then continue",
+  "text_policy": "strict",
+  "containers": [],
+  "nodes": [
+    {
+      "id": "submit",
+      "kind": "rect",
+      "x": 40,
+      "y": 140,
+      "width": 110,
+      "height": 56,
+      "label": "submit",
+      "sublabel": "input",
+      "fill": "#f9fafb",
+      "stroke": "#d1d5db",
+      "flat": true
+    },
+    {
+      "id": "user",
+      "kind": "rect",
+      "x": 190,
+      "y": 140,
+      "width": 110,
+      "height": 56,
+      "label": "pi.user",
+      "sublabel": "entry",
+      "fill": "#eff6ff",
+      "stroke": "#3b82f6",
+      "flat": true
+    },
+    {
+      "id": "gen",
+      "kind": "rect",
+      "x": 340,
+      "y": 140,
+      "width": 120,
+      "height": 56,
+      "label": "generation",
+      "sublabel": "task",
+      "fill": "#fef3c7",
+      "stroke": "#d97706",
+      "flat": true
+    },
+    {
+      "id": "asst",
+      "kind": "rect",
+      "x": 500,
+      "y": 140,
+      "width": 130,
+      "height": 56,
+      "label": "pi.assistant",
+      "sublabel": "entry",
+      "fill": "#eff6ff",
+      "stroke": "#3b82f6",
+      "flat": true
+    },
+    {
+      "id": "done",
+      "kind": "rect",
+      "x": 670,
+      "y": 140,
+      "width": 110,
+      "height": 56,
+      "label": "done",
+      "sublabel": "submission",
+      "fill": "#f0fdf4",
+      "stroke": "#16a34a",
+      "flat": true
+    },
+    {
+      "id": "sub",
+      "kind": "rect",
+      "x": 340,
+      "y": 250,
+      "width": 140,
+      "height": 48,
+      "label": "submission",
+      "sublabel": "entry ↔ answer",
+      "fill": "#f9fafb",
+      "stroke": "#d1d5db",
+      "flat": true
+    }
+  ],
+  "arrows": [
+    {
+      "id": "e1",
+      "source": "submit",
+      "target": "user",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "control"
+    },
+    {
+      "id": "e2",
+      "source": "user",
+      "target": "gen",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "control"
+    },
+    {
+      "id": "e3",
+      "source": "gen",
+      "target": "asst",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "write",
+      "label": "write"
+    },
+    {
+      "id": "e4",
+      "source": "asst",
+      "target": "done",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "control"
+    },
+    {
+      "id": "e5",
+      "source": "submit",
+      "target": "sub",
+      "source_port": "bottom",
+      "target_port": "left",
+      "flow": "data",
+      "route_points": [
+        [
+          95,
+          240
+        ],
+        [
+          340,
+          240
+        ]
+      ]
+    },
+    {
+      "id": "e6",
+      "source": "done",
+      "target": "sub",
+      "source_port": "bottom",
+      "target_port": "right",
+      "flow": "feedback",
+      "route_points": [
+        [
+          725,
+          240
+        ],
+        [
+          480,
+          240
+        ]
+      ]
+    }
+  ],
+  "legend_orientation": "horizontal",
+  "legend_locked": false,
+  "legend": [
+    {
+      "flow": "control",
+      "label": "main"
+    },
+    {
+      "flow": "write",
+      "label": "persist"
+    },
+    {
+      "flow": "data",
+      "label": "ticket"
+    }
+  ],
+  "footer": "submission tracks job status"
+}

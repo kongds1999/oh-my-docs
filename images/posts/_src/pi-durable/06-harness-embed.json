@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "mode": "architecture",
+  "template_type": "architecture",
+  "style": 4,
+  "quality_profile": "standard",
+  "width": 760,
+  "height": 400,
+  "title": "Embeddable harness",
+  "subtitle": "clients attach; storage owns truth",
+  "text_policy": "strict",
+  "containers": [
+    {
+      "id": "clients",
+      "x": 36,
+      "y": 96,
+      "width": 180,
+      "height": 200,
+      "label": "Clients"
+    },
+    {
+      "id": "core",
+      "x": 260,
+      "y": 96,
+      "width": 460,
+      "height": 200,
+      "label": "Pi Durable Harness"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "web",
+      "kind": "rect",
+      "x": 56,
+      "y": 130,
+      "width": 140,
+      "height": 44,
+      "label": "Web / Slack",
+      "fill": "#f9fafb",
+      "stroke": "#d1d5db",
+      "flat": true
+    },
+    {
+      "id": "script",
+      "kind": "rect",
+      "x": 56,
+      "y": 200,
+      "width": 140,
+      "height": 44,
+      "label": "Script / CLI",
+      "fill": "#f9fafb",
+      "stroke": "#d1d5db",
+      "flat": true
+    },
+    {
+      "id": "conv",
+      "kind": "rect",
+      "x": 290,
+      "y": 130,
+      "width": 160,
+      "height": 50,
+      "label": "Conversations",
+      "sublabel": "transcript",
+      "fill": "#eff6ff",
+      "stroke": "#3b82f6",
+      "flat": true
+    },
+    {
+      "id": "store",
+      "kind": "cylinder",
+      "x": 500,
+      "y": 130,
+      "width": 180,
+      "height": 50,
+      "label": "Storage",
+      "sublabel": "SQLite / DO",
+      "fill": "#f0fdf4",
+      "stroke": "#16a34a"
+    },
+    {
+      "id": "tools",
+      "kind": "rect",
+      "x": 290,
+      "y": 210,
+      "width": 160,
+      "height": 50,
+      "label": "Tools + Env",
+      "fill": "#fef3c7",
+      "stroke": "#d97706",
+      "flat": true
+    },
+    {
+      "id": "docs",
+      "kind": "rect",
+      "x": 500,
+      "y": 210,
+      "width": 180,
+      "height": 50,
+      "label": "Documents",
+      "sublabel": "same commit",
+      "fill": "#faf5ff",
+      "stroke": "#7c3aed",
+      "flat": true
+    }
+  ],
+  "arrows": [
+    {
+      "id": "a1",
+      "source": "web",
+      "target": "conv",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "control"
+    },
+    {
+      "id": "a2",
+      "source": "script",
+      "target": "tools",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "control"
+    },
+    {
+      "id": "a3",
+      "source": "conv",
+      "target": "store",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "write",
+      "label": "commit"
+    },
+    {
+      "id": "a4",
+      "source": "tools",
+      "target": "docs",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "data"
+    }
+  ],
+  "legend_orientation": "horizontal",
+  "legend_locked": false,
+  "legend": [
+    {
+      "flow": "control",
+      "label": "call"
+    },
+    {
+      "flow": "write",
+      "label": "persist"
+    },
+    {
+      "flow": "data",
+      "label": "state"
+    }
+  ],
+  "footer": "integration alone is not enough"
+}
